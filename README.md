@@ -1,36 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 360 Radio & Television Dutse (98.5 FM & 360 TV)
 
-## Getting Started
+![360 Media Banner](https://via.placeholder.com/1200x400/0f172a/059669?text=360+Radio+%26+Television+Dutse)
 
-First, run the development server:
+Welcome to the **360 Radio & Television Dutse** operations and broadcasting portal. This is a state-of-the-art Next.js web application designed to handle the fast-paced environment of live radio and television broadcasting in Jigawa State, Nigeria.
+
+## 🚀 Features & Architecture
+
+This platform provides dedicated, isolated dashboards for various staff members, ensuring that everyone from the Station Manager to the On-Air Presenter has the exact tools they need to operate efficiently.
+
+### 🎭 Role-Tailored Staff Portals
+- **Station Manager Dashboard** (`/station-manager`): High-level analytics, broadcast stream health monitoring, and staff directory management.
+- **News Editor Desk** (`/news-editor`): Editorial workflow, pending drafts queue, and live breaking news ticker management.
+- **Program Officer Grid** (`/program-officer`): Master program scheduler, studio utilization metrics, and live show assignments.
+- **Presenter Studio Console** (`/presenter`): A premium, dark-mode, high-efficiency "Slate Studio UI" featuring a live teleprompter, interactive soundboard jingles, and active broadcast clocks.
+- **Commercial & Ads** (`/commercial-ads`): Manage client campaigns, track ad server slot fulfillments, and configure target broadcast slots.
+
+### 🎨 Design System
+The application utilizes a custom **"Slate Studio UI"** design system tailored for broadcasting environments:
+- **Low-Eyestrain Dark Mode**: Built with deep slate colors (`slate-900` / `#0f172a`) to minimize fatigue during long studio hours.
+- **Glassmorphism**: Beautiful translucent panels (`backdrop-blur-xl`) giving a futuristic and premium feel.
+- **Framer Motion**: Smooth, staggered entrance animations and interactive physics (spring effects) across all dashboards.
+- **Tailwind CSS**: Utility-first, fully responsive design ensuring the dashboards work flawlessly on everything from a studio control room monitor to a reporter's mobile device.
+- **Lucide Icons**: Clean, sharp, and consistent iconography.
+
+## 🛠 Tech Stack
+- **Framework:** [Next.js](https://nextjs.org/) (App Router)
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS
+- **Animations:** Framer Motion
+- **Icons:** Lucide React
+
+## 📦 Getting Started
+
+First, install the dependencies and run the development server:
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🗂 Project Structure
+- `/app/(staff)`: Contains the isolated dashboards for internal employees (Station Manager, News Editor, Program Officer, Presenter).
+- `/components`: Reusable UI components (Modals, Navbars, Layout Wrappers).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🔒 Session & Role Handling
+Currently, the UI dynamically persists the active role state across shared routes (like `/internal-notices` and `/media-storage`) seamlessly on the client side using React State and `useRef`. In production, this will be wired to a backend authentication provider to enforce role-based access control.
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+*Built with precision for 360 Radio & Television Dutse - The Pulse of Jigawa State.*
