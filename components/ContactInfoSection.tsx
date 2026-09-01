@@ -26,7 +26,7 @@ export default function ContactInfoSection() {
               <div>
                 <h4 className="text-gray-900 font-bold text-sm mb-1">Studio Lines</h4>
                 <p className="text-gray-500 text-sm">
-                  +234 803 360 0000
+                  <a href="tel:+2349029535000" className="hover:text-green-600 transition-colors">+234 902 953 5000</a>
                 </p>
               </div>
             </div>

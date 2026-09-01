@@ -1,10 +1,105 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Radio, Mic, Settings2, PowerOff, Activity } from 'lucide-react';
+import { Radio, Mic, Settings2, PowerOff, Activity, Loader2 } from 'lucide-react';
 
 export default function LiveRadioControlPage() {
+  const [streamConfig, setStreamConfig] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [toggleLoading, setToggleLoading] = useState(false);
+  const [liveListeners, setLiveListeners] = useState(0);
+
+  useEffect(() => {
+    fetchStreamConfig();
+    fetchPresence();
+    const interval = setInterval(fetchPresence, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchPresence = async () => {
+    try {
+      const res = await fetch("/api/presence?type=RADIO", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setLiveListeners(data.listeners || 0);
+      }
+    } catch (e) {}
+  };
+
+  const fetchStreamConfig = async () => {
+    try {
+      const res = await fetch("/api/streams?type=RADIO", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setStreamConfig(data);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/streams?type=RADIO", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...streamConfig, id: "RADIO", type: "RADIO" })
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setStreamConfig(updated);
+        alert("✅ Live Radio (98.5 FM) Stream settings updated successfully!");
+      } else {
+        alert("Failed to update radio stream.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("An error occurred while saving.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleToggleOnline = async () => {
+    setToggleLoading(true);
+    try {
+      const updatedConfig = { ...streamConfig, id: "RADIO", type: "RADIO", isOnline: !streamConfig.isOnline };
+      const res = await fetch("/api/streams?type=RADIO", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedConfig)
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setStreamConfig(updated);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setToggleLoading(false);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setStreamConfig({
+      ...streamConfig,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 relative min-h-full">
       
@@ -28,10 +123,12 @@ export default function LiveRadioControlPage() {
         <motion.button 
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm px-6 py-2.5 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all flex items-center gap-2"
+          onClick={handleToggleOnline}
+          disabled={toggleLoading}
+          className={`${streamConfig?.isOnline ? 'bg-red-600 hover:bg-red-500 shadow-[0_0_20px_rgba(220,38,38,0.4)]' : 'bg-emerald-600 hover:bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.4)]'} text-white font-bold text-sm px-6 py-2.5 rounded-xl transition-all flex items-center gap-2`}
         >
-          <PowerOff className="w-4 h-4" />
-          DISABLE LIVE STREAM (GO OFFLINE)
+          {toggleLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <PowerOff className="w-4 h-4" />}
+          {streamConfig?.isOnline ? "DISABLE LIVE STREAM (GO OFFLINE)" : "ENABLE LIVE STREAM (GO ONLINE)"}
         </motion.button>
       </motion.div>
 
@@ -46,22 +143,26 @@ export default function LiveRadioControlPage() {
         >
           
           {/* Animated Wave Background */}
-          <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
-            <svg className="absolute w-[200%] h-full top-0 left-0 animate-[pulse_4s_ease-in-out_infinite]" viewBox="0 0 1440 320" preserveAspectRatio="none">
-              <path fill="#10b981" d="M0,160L48,144C96,128,192,96,288,106.7C384,117,480,171,576,170.7C672,171,768,117,864,112C960,107,1056,155,1152,165.3C1248,176,1344,149,1392,138.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
-            </svg>
-          </div>
+          {streamConfig?.isOnline && (
+            <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
+              <svg className="absolute w-[200%] h-full top-0 left-0 animate-[pulse_4s_ease-in-out_infinite]" viewBox="0 0 1440 320" preserveAspectRatio="none">
+                <path fill="#10b981" d="M0,160L48,144C96,128,192,96,288,106.7C384,117,480,171,576,170.7C672,171,768,117,864,112C960,107,1056,155,1152,165.3C1248,176,1344,149,1392,138.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+              </svg>
+            </div>
+          )}
 
           <div className="relative z-10 flex items-center justify-between mb-8">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">TRANSMITTER STATUS</span>
-            <span className="bg-emerald-500/10 text-emerald-400 text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border border-emerald-500/20 flex items-center gap-2 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              ON AIR (LIVE)
+            <span className={`${streamConfig?.isOnline ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'bg-slate-800 text-slate-400 border-slate-700'} text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border flex items-center gap-2`}>
+              <span className={`w-2 h-2 rounded-full ${streamConfig?.isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-500'}`}></span>
+              {streamConfig?.isOnline ? "ON AIR (LIVE)" : "OFFLINE"}
             </span>
           </div>
 
           <div className="relative z-10 mb-8">
-            <h3 className="text-6xl font-black text-slate-100 mb-2 tracking-tight">1,284</h3>
+            <h3 className="text-6xl font-black text-slate-100 mb-2 tracking-tight">
+              {streamConfig?.isOnline ? liveListeners.toLocaleString() : "0"}
+            </h3>
             <p className="text-sm text-slate-400 font-medium">Concurrent Digital Listeners Connected</p>
           </div>
 
@@ -99,14 +200,14 @@ export default function LiveRadioControlPage() {
                   <Mic className="text-emerald-500 w-5 h-5" />
                 </div>
                 <div className="truncate">
-                  <h4 className="text-sm font-bold text-slate-100 mb-0.5 truncate">Barke Da Sallah & Morning Pulse</h4>
-                  <p className="text-[10px] font-mono text-slate-500 truncate">https://stream.zeno.fm/f3wvbbqndg8uv</p>
+                  <h4 className="text-sm font-bold text-slate-100 mb-0.5 truncate">{streamConfig?.currentShow}</h4>
+                  <p className="text-[10px] font-mono text-slate-500 truncate">{streamConfig?.streamUrl}</p>
                 </div>
               </div>
-              <button className="relative z-10 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2 rounded-lg transition-all flex items-center gap-2 shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.3)] ml-4">
+              <a href={streamConfig?.streamUrl} target="_blank" className="relative z-10 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2 rounded-lg transition-all flex items-center gap-2 shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.3)] ml-4">
                 <Activity className="w-3.5 h-3.5" />
                 Listen Live
-              </button>
+              </a>
             </div>
           </motion.div>
 
@@ -127,18 +228,19 @@ export default function LiveRadioControlPage() {
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Live Radio Audio Stream URL <span className="text-red-500">*</span></label>
                 <div className="relative">
                   <Radio className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
-                  <input type="url" defaultValue="https://stream.zeno.fm/f3wvbbqndg8uv" className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 pl-11 text-sm font-mono text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all" />
+                  <input type="url" name="streamUrl" value={streamConfig?.streamUrl || ''} onChange={handleChange} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 pl-11 text-sm font-mono text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all" />
                 </div>
                 <p className="text-[10px] text-slate-500 font-medium mt-1">Supports Icecast / Shoutcast MP3 / AAC direct streaming links.</p>
               </div>
 
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Currently Playing Show Title <span className="text-red-500">*</span></label>
-                <input type="text" defaultValue="Barke Da Sallah & Morning Pulse" className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all" />
+                <input type="text" name="currentShow" value={streamConfig?.currentShow || ''} onChange={handleChange} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all" />
               </div>
 
-              <button className="bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm px-6 py-3 rounded-xl shadow-md transition-all">
-                Update Stream Parameters
+              <button onClick={handleSave} disabled={saving} className="bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white font-bold text-sm px-6 py-3 rounded-xl shadow-md transition-all flex items-center gap-2">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                {saving ? "Updating..." : "Update Stream Parameters"}
               </button>
             </div>
           </motion.div>

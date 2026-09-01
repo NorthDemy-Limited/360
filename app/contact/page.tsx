@@ -65,7 +65,7 @@ export default function ContactPage() {
                 <div>
                   <h4 className="text-white font-bold mb-1">Phone Lines</h4>
                   <p className="text-sm text-slate-400 leading-relaxed">
-                    +234 803 360 0000
+                    <a href="tel:+2349029535000" className="hover:text-emerald-400 transition-colors">+234 902 953 5000</a>
                   </p>
                 </div>
               </div>

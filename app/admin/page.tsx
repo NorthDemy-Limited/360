@@ -1,6 +1,7 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { 
   Radio, 
@@ -14,21 +15,24 @@ import {
   BellRing,
   ArrowUpRight,
   Clock,
-  Activity
+  Activity,
+  Loader2,
+  ShieldCheck
 } from 'lucide-react';
 
 export default function AdminDashboardPage() {
-  const broadcasts = [
-    { id: 1, name: "Barke Da Sallah & Morning Pulse", host: "Balarabe Hadejia & Hadiza Gumel", medium: "BOTH", time: "06:00 - 09:00", status: "On Air" },
-    { id: 2, name: "Jigawa Business & Agriculture Today", host: "Fatima Garba", medium: "RADIO", time: "10:00 - 11:30", status: "Scheduled" },
-    { id: 3, name: "Arewa Heritage & Cultural Beats", host: "Balarabe Hadejia", medium: "BOTH", time: "12:00 - 14:00", status: "Scheduled" },
-  ];
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const notices = [
-    { id: 1, title: "IMPORTANT: Studio B Maintenance Schedule on Sunday", date: "2026-08-08", snippet: "Studio B radio mixing desk will undergo scheduled routine maintenance on Sunday from 01:00 AM to...", postedBy: "Engr. Danladi Ringim", urgent: true },
-    { id: 2, title: "Submission Deadline for Week 33 Program Schedules", date: "2026-08-06", snippet: "All producers and presenters are reminded to submit their episode logs and guest rosters to the Program...", postedBy: "Fatima Garba", urgent: true },
-    { id: 3, title: "Staff Meeting & Editorial Briefing", date: "2026-08-04", snippet: "Monthly all-hands briefing will take place in the Main Conference Room on Monday at 9:00 AM sharp.", postedBy: "Alhaji Ibrahim Dutse", urgent: false },
-  ];
+  useEffect(() => {
+    fetch('/api/admin/dashboard')
+      .then(res => res.json())
+      .then(json => {
+        setData(json);
+        setLoading(false);
+      })
+      .catch(err => console.error(err));
+  }, []);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -42,6 +46,32 @@ export default function AdminDashboardPage() {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
   };
+
+  if (loading) {
+    return (
+      <div className="flex h-[80vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+          <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Initializing Terminal...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (data?.error || !data?.metrics) {
+    return (
+      <div className="flex h-[80vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-4 bg-red-500/10 p-8 rounded-3xl border border-red-500/20 text-center max-w-md">
+          <Activity className="w-12 h-12 text-red-500 mb-2" />
+          <h3 className="text-lg font-bold text-red-400">Terminal Connection Error</h3>
+          <p className="text-sm text-slate-400 font-medium">Failed to establish a secure connection to the database. If you just updated the database schema, please restart your development server.</p>
+          <button onClick={() => window.location.reload()} className="mt-4 px-6 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl transition-colors">
+            Retry Connection
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div 
@@ -70,18 +100,18 @@ export default function AdminDashboardPage() {
             </p>
             
             <div className="flex flex-wrap gap-4">
-              <button className="bg-white hover:bg-slate-100 text-slate-900 font-bold text-sm px-6 py-3 rounded-full shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all flex items-center gap-2 group/btn">
+              <Link href="/admin/programs" className="bg-white hover:bg-slate-100 text-slate-900 font-bold text-sm px-6 py-3 rounded-full shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all flex items-center gap-2 group/btn">
                 <CalendarPlus className="w-4 h-4 text-slate-700 group-hover/btn:scale-110 transition-transform" />
                 Add Schedule
-              </button>
-              <button className="bg-slate-800/80 hover:bg-slate-700 text-white font-bold text-sm px-6 py-3 rounded-full border border-slate-700 transition-all flex items-center gap-2 group/btn">
+              </Link>
+              <Link href="/admin/newsroom" className="bg-slate-800/80 hover:bg-slate-700 text-white font-bold text-sm px-6 py-3 rounded-full border border-slate-700 transition-all flex items-center gap-2 group/btn">
                 <FileText className="w-4 h-4 text-blue-400 group-hover/btn:scale-110 transition-transform" />
                 Publish News
-              </button>
-              <button className="bg-slate-800/80 hover:bg-slate-700 text-white font-bold text-sm px-6 py-3 rounded-full border border-slate-700 transition-all flex items-center gap-2 group/btn">
-                <BellRing className="w-4 h-4 text-orange-400 group-hover/btn:scale-110 transition-transform" />
-                Post Notice
-              </button>
+              </Link>
+              <Link href="/admin/media-storage" className="bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 font-bold text-sm px-6 py-3 rounded-full border border-purple-500/30 transition-all flex items-center gap-2 group/btn">
+                <ShieldCheck className="w-4 h-4 text-purple-400 group-hover/btn:scale-110 transition-transform" />
+                Media Vault &amp; Authorization
+              </Link>
             </div>
           </div>
         </div>
@@ -98,7 +128,9 @@ export default function AdminDashboardPage() {
           </div>
           <div className="relative z-10 mt-8">
             <span className="text-[10px] font-black text-indigo-300 uppercase tracking-widest block mb-1">Date</span>
-            <h3 className="text-xl font-bold text-white tracking-tight">August 9, 2026</h3>
+            <h3 className="text-xl font-bold text-white tracking-tight">
+              {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+            </h3>
             <p className="text-indigo-200/60 text-sm mt-1">Dutse, Jigawa State</p>
           </div>
         </div>
@@ -121,12 +153,14 @@ export default function AdminDashboardPage() {
           <div>
             <h3 className="text-xl font-bold text-white mb-1">98.5 FM</h3>
             <div className="flex items-end gap-2 mb-6">
-              <span className="text-3xl font-extrabold text-white">1.2k</span>
-              <span className="text-xs text-slate-400 mb-1 font-medium">Listeners</span>
+              <span className="text-3xl font-extrabold text-white">
+                {data.metrics.radioListeners >= 1000 ? (data.metrics.radioListeners / 1000).toFixed(1) + 'k' : data.metrics.radioListeners}
+              </span>
+              <span className="text-xs text-slate-400 mb-1 font-medium">Active Listeners</span>
             </div>
-            <button className="w-full py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-emerald-400 text-xs font-bold transition-all flex items-center justify-center gap-2">
+            <Link href="/admin/live-radio" className="w-full py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-emerald-400 text-xs font-bold transition-all flex items-center justify-center gap-2">
               <PlayCircle className="w-4 h-4" /> Monitor Stream
-            </button>
+            </Link>
           </div>
         </motion.div>
 
@@ -144,12 +178,14 @@ export default function AdminDashboardPage() {
           <div>
             <h3 className="text-xl font-bold text-white mb-1">360 Digital</h3>
             <div className="flex items-end gap-2 mb-6">
-              <span className="text-3xl font-extrabold text-white">3.4k</span>
-              <span className="text-xs text-slate-400 mb-1 font-medium">Viewers</span>
+              <span className="text-3xl font-extrabold text-white">
+                {data.metrics.tvViewers >= 1000 ? (data.metrics.tvViewers / 1000).toFixed(1) + 'k' : data.metrics.tvViewers}
+              </span>
+              <span className="text-xs text-slate-400 mb-1 font-medium">Active Viewers</span>
             </div>
-            <button className="w-full py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-red-400 text-xs font-bold transition-all flex items-center justify-center gap-2">
+            <Link href="/admin/live-tv" className="w-full py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-red-400 text-xs font-bold transition-all flex items-center justify-center gap-2">
               <PlayCircle className="w-4 h-4" /> Monitor Stream
-            </button>
+            </Link>
           </div>
         </motion.div>
 
@@ -163,7 +199,7 @@ export default function AdminDashboardPage() {
           <div>
             <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-1">Newsroom</h3>
             <div className="flex items-end gap-2 mb-6">
-              <span className="text-3xl font-extrabold text-white">4</span>
+              <span className="text-3xl font-extrabold text-white">{data.metrics.newsCount}</span>
               <span className="text-xs text-slate-400 mb-1 font-medium">Published Today</span>
             </div>
             <button className="w-full py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-white text-xs font-bold transition-all flex items-center justify-center gap-2 group-hover:bg-blue-600 group-hover:border-blue-500">
@@ -182,7 +218,7 @@ export default function AdminDashboardPage() {
           <div>
             <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-1">Commercial</h3>
             <div className="flex items-end gap-2 mb-6">
-              <span className="text-3xl font-extrabold text-white">3</span>
+              <span className="text-3xl font-extrabold text-white">{data.metrics.commercialCount}</span>
               <span className="text-xs text-slate-400 mb-1 font-medium">Active Adverts</span>
             </div>
             <button className="w-full py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-white text-xs font-bold transition-all flex items-center justify-center gap-2 group-hover:bg-amber-600 group-hover:border-amber-500">
@@ -212,31 +248,37 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="space-y-4">
-            {broadcasts.map((prog) => (
-              <div key={prog.id} className="group bg-slate-800/40 hover:bg-slate-800/80 rounded-2xl p-5 border border-slate-800 hover:border-slate-700 transition-all flex items-center justify-between">
-                <div className="flex items-start gap-4">
-                  <span className={`text-[9px] font-black uppercase tracking-[0.15em] px-2.5 py-1 rounded-md border shrink-0 mt-0.5 shadow-sm ${
-                    prog.medium === 'BOTH' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 
-                    prog.medium === 'RADIO' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
-                    'bg-red-500/10 text-red-400 border-red-500/20'
-                  }`}>
-                    {prog.medium}
-                  </span>
-                  <div>
-                    <h4 className="font-bold text-white mb-1.5 group-hover:text-blue-400 transition-colors">{prog.name}</h4>
-                    <p className="text-xs text-slate-400 font-medium">Host: <span className="text-slate-300">{prog.host}</span></p>
+            {data.programs.length === 0 ? (
+              <div className="text-center py-8 text-slate-500 text-sm font-medium">No programs scheduled for today.</div>
+            ) : (
+              data.programs.map((prog: any) => (
+                <div key={prog.id} className="group bg-slate-800/40 hover:bg-slate-800/80 rounded-2xl p-5 border border-slate-800 hover:border-slate-700 transition-all flex items-center justify-between">
+                  <div className="flex items-start gap-4">
+                    <span className={`text-[9px] font-black uppercase tracking-[0.15em] px-2.5 py-1 rounded-md border shrink-0 mt-0.5 shadow-sm ${
+                      prog.type === 'BOTH' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 
+                      prog.type === 'RADIO' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
+                      'bg-red-500/10 text-red-400 border-red-500/20'
+                    }`}>
+                      {prog.type}
+                    </span>
+                    <div>
+                      <h4 className="font-bold text-white mb-1.5 group-hover:text-blue-400 transition-colors">{prog.title}</h4>
+                      <p className="text-xs text-slate-400 font-medium">Host: <span className="text-slate-300">{prog.host?.name || 'Unassigned'}</span></p>
+                    </div>
+                  </div>
+                  <div className="text-right flex flex-col items-end gap-2.5">
+                    <span className="text-sm font-bold text-slate-300 font-mono tracking-tight">
+                      {new Date(prog.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - {new Date(prog.endTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    </span>
+                    <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border shadow-sm ${
+                      prog.isLive ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-700/50 text-slate-400 border-slate-600'
+                    }`}>
+                      {prog.isLive ? 'On Air' : 'Scheduled'}
+                    </span>
                   </div>
                 </div>
-                <div className="text-right flex flex-col items-end gap-2.5">
-                  <span className="text-sm font-bold text-slate-300 font-mono tracking-tight">{prog.time}</span>
-                  <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border shadow-sm ${
-                    prog.status === 'On Air' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-700/50 text-slate-400 border-slate-600'
-                  }`}>
-                    {prog.status}
-                  </span>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
@@ -252,28 +294,32 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="space-y-4 flex-1 overflow-y-auto no-scrollbar">
-            {notices.map((notice) => (
-              <div key={notice.id} className={`rounded-2xl p-5 border transition-all ${
-                notice.urgent 
-                  ? 'bg-amber-500/5 border-amber-500/20' 
-                  : 'bg-slate-800/40 border-slate-800'
-              }`}>
-                <div className="flex items-start justify-between gap-2 mb-3">
-                  <h4 className={`text-sm font-bold leading-snug ${notice.urgent ? 'text-amber-400' : 'text-slate-200'}`}>
-                    {notice.title}
-                  </h4>
-                </div>
-                <p className="text-xs text-slate-400 mb-4 leading-relaxed line-clamp-2">
-                  {notice.snippet}
-                </p>
-                <div className="flex items-center justify-between mt-auto">
-                  <p className="text-[10px] text-slate-500 font-medium">
-                    By {notice.postedBy}
+            {data.notices.length === 0 ? (
+              <div className="text-center py-8 text-slate-500 text-sm font-medium">No active notices.</div>
+            ) : (
+              data.notices.map((notice: any) => (
+                <div key={notice.id} className={`rounded-2xl p-5 border transition-all ${
+                  notice.urgency === 'Critical' || notice.urgency === 'High' 
+                    ? 'bg-amber-500/5 border-amber-500/20' 
+                    : 'bg-slate-800/40 border-slate-800'
+                }`}>
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <h4 className={`text-sm font-bold leading-snug ${notice.urgency === 'Critical' || notice.urgency === 'High' ? 'text-amber-400' : 'text-slate-200'}`}>
+                      {notice.title}
+                    </h4>
+                  </div>
+                  <p className="text-xs text-slate-400 mb-4 leading-relaxed line-clamp-2">
+                    {notice.body}
                   </p>
-                  <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">{notice.date}</span>
+                  <div className="flex items-center justify-between mt-auto">
+                    <p className="text-[10px] text-slate-500 font-medium">
+                      By {notice.author?.name || 'System Admin'}
+                    </p>
+                    <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">{new Date(notice.createdAt).toLocaleDateString()}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
           
           <button className="w-full mt-6 py-3 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700 text-white text-xs font-bold transition-all flex items-center justify-center gap-2">

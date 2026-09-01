@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                 String    @id @default(cuid())
+  email              String    @unique
+  name               String
+  role               String    @default("PRESENTER")
+  avatar             String?
+  phone              String?
+  password           String?   @default("pass360")
+  mustChangePassword Boolean   @default(true)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  
+  // Relations
+  programs  Program[] @relation("ProgramHost")
+  articles  News[]    @relation("NewsAuthor")
+  notices   Notice[]  @relation("NoticeAuthor")
+}
+
+model Program {
+  id            String        @id @default(cuid())
+  title         String
+  description   String?
+  type          String
+  startTime     DateTime
+  endTime       DateTime
+  isLive        Boolean       @default(false)
+  
+  // Relations
+  hostId        String
+  host          User          @relation("ProgramHost", fields: [hostId], references: [id])
+}
+
+model News {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  content     String
+  category    String
+  imageUrl    String?
+  isPublished Boolean  @default(false)
+  publishedAt DateTime?
+  
+  // Relations
+  authorId    String
+  author      User     @relation("NewsAuthor", fields: [authorId], references: [id])
+}
+
+model CommercialCampaign {
+  id          String   @id @default(cuid())
+  clientName  String
+  title       String
+  targetMedia String
+  placement   String   @default("Standard")
+  mediaUrl    String?
+  value       Float
+  startDate   DateTime
+  endDate     DateTime
+  status      String   @default("ACTIVE")
+}
+
+model Notice {
+  id             String   @id @default(cuid())
+  title          String
+  body           String
+  urgency        String   @default("Standard")
+  targetAudience String   @default("All Staff")
+  isPinned       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  
+  // Relations
+  authorId       String
+  author         User     @relation("NoticeAuthor", fields: [authorId], references: [id])
+}
+
+model MediaAsset {
+  id                String   @id @default(cuid())
+  title             String
+  type              String   // Image, Audio, Video, Jingle, Document
+  category          String?  
+  url               String
+  size              String   @default("0 MB")
+  isAuthorized      Boolean  @default(false)
+  isActiveBroadcast Boolean  @default(false)
+  createdAt         DateTime @default(now())
+}
+
+model StationSettings {
+  id          String   @id @default("1")
+  name        String   @default("360 Radio & Television")
+  motto       String   @default("Voice of the Horizon - Broadcasting Peace, Culture & Truth")
+  phone       String   @default("+234 902 953 5000")
+  email       String   @default("info@360radiotv.ng")
+  address     String   @default("No. 1 Broad Street, Central Business District")
+  city        String   @default("Dutse")
+  state       String   @default("Jigawa State")
+  facebookUrl String?  @default("https://facebook.com/360radiotvdutse")
+  twitterUrl  String?  @default("https://twitter.com/360radiotvdutse")
+  updatedAt   DateTime @updatedAt
+}
+
+model StreamConfig {
+  id              String   @id // RADIO or TV
+  streamUrl       String
+  currentShow     String
+  isOnline        Boolean  @default(true)
+  updatedAt       DateTime @updatedAt
+}

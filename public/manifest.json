@@ -1,0 +1,43 @@
+{
+  "name": "360 Radio & Television",
+  "short_name": "360 Media",
+  "description": "Voice of the Horizon - 360 Radio & Television Dutse, Jigawa State",
+  "start_url": "/",
+  "id": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#020617",
+  "theme_color": "#020617",
+  "categories": ["news", "entertainment", "music"],
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Listen Live (98.5 FM)",
+      "short_name": "Radio",
+      "description": "Listen to 360 Radio 98.5 FM Dutse",
+      "url": "/listen-live",
+      "icons": [{ "src": "/icons/icon-192x192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Watch Live TV",
+      "short_name": "TV",
+      "description": "Watch 360 TV digital livestream",
+      "url": "/watch-live",
+      "icons": [{ "src": "/icons/icon-192x192.svg", "sizes": "192x192" }]
+    }
+  ]
+}

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, 
@@ -22,6 +22,7 @@ import {
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [isHovered, setIsHovered] = useState<string | null>(null);
 
   const sidebarLinks = [
@@ -37,6 +38,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: "Station Settings", href: "/admin/settings", icon: Settings },
   ];
 
+  // If on Super Admin Login screen, render clean full-screen canvas view
+  if (pathname === '/admin/login') {
+    return <>{children}</>;
+  }
+
   return (
     <div className="h-screen w-full bg-[#020817] flex font-sans overflow-hidden text-slate-300 selection:bg-blue-500/30">
       
@@ -51,11 +57,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {/* Station Brand Header */}
           <div className="p-6 sticky top-0 bg-[#09090b]/90 backdrop-blur-md border-b border-slate-800/50 z-10">
             <div className="flex items-center gap-4 mb-4">
-              <div className="relative">
-                <div className="absolute inset-0 bg-blue-500 blur-md opacity-40 animate-pulse"></div>
-                <div className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-black text-xs px-2.5 py-1.5 rounded-md flex items-center justify-center tracking-wider relative z-10 border border-white/10">
-                  360
-                </div>
+              <div className="relative w-10 h-10 rounded-xl overflow-hidden shadow-lg border border-slate-700/60 bg-slate-900 shrink-0">
+                <img 
+                  src="/icons/360.jpeg" 
+                  alt="360 Radio & TV" 
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div>
                 <h1 className="font-extrabold text-sm leading-tight tracking-wide text-white">360 RADIO & TV</h1>
@@ -142,30 +149,37 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             View Public Website
           </Link>
           
-          <div className="relative group cursor-pointer">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <div className="relative flex items-center justify-between p-3 rounded-2xl bg-slate-900 border border-slate-800 group-hover:border-slate-700 transition-all overflow-hidden">
-              <div className="flex items-center gap-3 relative z-10">
-                <div className="relative">
-                  <img 
-                    src="https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=150" 
-                    alt="Admin" 
-                    className="w-10 h-10 rounded-xl object-cover border border-slate-700"
-                  />
-                  <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-900"></div>
-                </div>
-                <div>
-                  <h3 className="text-xs font-bold text-white leading-tight">Alhaji Dutse</h3>
-                  <div className="flex items-center gap-1 mt-1">
-                    <span className="bg-blue-500/10 text-blue-400 text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border border-blue-500/20">
-                      SUPER ADMIN
-                    </span>
-                  </div>
+          <button 
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                sessionStorage.removeItem('superAdminAuth');
+                sessionStorage.removeItem('adminUser');
+              }
+              router.push('/admin/login');
+            }}
+            className="w-full flex items-center justify-between p-3 rounded-2xl bg-slate-900 border border-slate-800 hover:border-red-500/50 transition-all group overflow-hidden"
+            title="Log Out of Super Admin Terminal"
+          >
+            <div className="flex items-center gap-3 relative z-10">
+              <div className="relative">
+                <img 
+                  src="https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=150" 
+                  alt="Admin" 
+                  className="w-10 h-10 rounded-xl object-cover border border-slate-700"
+                />
+                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-900"></div>
+              </div>
+              <div className="text-left">
+                <h3 className="text-xs font-bold text-white leading-tight">Alhaji Dutse</h3>
+                <div className="flex items-center gap-1 mt-1">
+                  <span className="bg-blue-500/10 text-blue-400 text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border border-blue-500/20">
+                    SUPER ADMIN
+                  </span>
                 </div>
               </div>
-              <LogOut className="w-4 h-4 text-slate-500 group-hover:text-red-400 transition-colors relative z-10" />
             </div>
-          </div>
+            <LogOut className="w-4 h-4 text-slate-500 group-hover:text-red-400 transition-colors relative z-10 shrink-0" />
+          </button>
         </div>
       </motion.aside>
 

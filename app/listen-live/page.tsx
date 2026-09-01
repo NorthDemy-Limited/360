@@ -1,237 +1,545 @@
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Play, 
+  Pause, 
+  Radio, 
+  Clock, 
+  Activity, 
+  Headphones, 
+  Tv, 
+  Volume2, 
+  VolumeX, 
+  Loader2, 
+  Wifi, 
+  RadioTower, 
+  Sparkles,
+  RefreshCw,
+  Share2
+} from 'lucide-react';
+import Link from 'next/link';
 
 export default function ListenLivePage() {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(false);
+  const [volume, setVolume] = useState(0.85);
+  const [isMuted, setIsMuted] = useState(false);
+  const [streamError, setStreamError] = useState<string | null>(null);
+
+  const [streamConfig, setStreamConfig] = useState<any>(null);
+  const [schedule, setSchedule] = useState<any[]>([]);
+  const [liveListeners, setLiveListeners] = useState(1);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const togglePlay = () => {
-    if (!audioRef.current) return;
+  // Presence session id
+  const [sessionId] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const existing = sessionStorage.getItem('radioSessionId');
+      if (existing) return existing;
+      const newId = 'radio_' + Math.random().toString(36).substring(2, 9);
+      sessionStorage.setItem('radioSessionId', newId);
+      return newId;
+    }
+    return 'radio_' + Math.random().toString(36).substring(2, 9);
+  });
+
+  useEffect(() => {
+    fetchRadioData();
+
+    // Fetch initial listener presence count
+    fetch('/api/presence?type=RADIO', { cache: 'no-store' })
+      .then(res => res.json())
+      .then(data => {
+        if (data.listeners !== undefined) setLiveListeners(data.listeners);
+      })
+      .catch(() => {});
+  }, []);
+
+  // Update MediaSession on mobile locks-screen & bluetooth
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'mediaSession' in navigator) {
+      const showTitle = streamConfig?.currentShow || "Barke Da Sallah & Pulse";
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: showTitle,
+        artist: "360 Radio 98.5 FM Dutse",
+        album: "Live Broadcast • Jigawa State",
+        artwork: [
+          { src: "/icons/icon-192x192.svg", sizes: "192x192", type: "image/svg+xml" },
+          { src: "/icons/icon-512x512.svg", sizes: "512x512", type: "image/svg+xml" }
+        ]
+      });
+
+      navigator.mediaSession.setActionHandler('play', () => togglePlay());
+      navigator.mediaSession.setActionHandler('pause', () => togglePlay());
+    }
+  }, [streamConfig]);
+
+  // Audio Event Listeners for Buffering & Volume
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    audio.volume = isMuted ? 0 : volume;
+
+    const handleWaiting = () => setIsBuffering(true);
+    const handlePlaying = () => {
+      setIsBuffering(false);
+      setIsPlaying(true);
+      setStreamError(null);
+    };
+    const handlePause = () => {
+      setIsPlaying(false);
+      setIsBuffering(false);
+    };
+    const handleError = (e: any) => {
+      // Only log/show error if audio actually has a source and was attempting to play
+      if (audio.src && audio.src !== "" && audio.src !== window.location.href) {
+        console.warn("Audio stream interrupted:", e);
+        setIsBuffering(false);
+        setIsPlaying(false);
+        setStreamError("Stream temporarily buffering or offline. Tap Retry to reconnect.");
+      }
+    };
+
+    audio.addEventListener('waiting', handleWaiting);
+    audio.addEventListener('playing', handlePlaying);
+    audio.addEventListener('pause', handlePause);
+    audio.addEventListener('error', handleError);
+
+    return () => {
+      audio.removeEventListener('waiting', handleWaiting);
+      audio.removeEventListener('playing', handlePlaying);
+      audio.removeEventListener('pause', handlePause);
+      audio.removeEventListener('error', handleError);
+    };
+  }, [volume, isMuted]);
+
+  // Send presence heartbeat while actively listening
+  useEffect(() => {
+    let interval: any;
 
     if (isPlaying) {
-      audioRef.current.pause();
-      setIsPlaying(false);
-    } else {
-      // We use a placeholder stream URL. In a real app, replace this with the actual Icecast/Shoutcast URL.
-      if (!audioRef.current.src) {
-        audioRef.current.src = "https://icecast.omroep.nl/radio1-bb-mp3"; 
-      }
-      
-      const playPromise = audioRef.current.play();
-      setIsPlaying(true);
-
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          // Playback was prevented or interrupted by pause()
-          if (error.name !== 'AbortError') {
-            console.error("Audio playback error:", error);
+      const sendHeartbeat = async () => {
+        try {
+          const res = await fetch('/api/presence', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'RADIO', sessionId, action: 'heartbeat' })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setLiveListeners(data.activeCount || 1);
           }
-          setIsPlaying(false);
-        });
+        } catch (e) {}
+      };
+
+      sendHeartbeat();
+      interval = setInterval(sendHeartbeat, 15000);
+    } else {
+      fetch('/api/presence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'RADIO', sessionId, action: 'leave' }),
+        keepalive: true
+      }).catch(() => {});
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isPlaying, sessionId]);
+
+  const fetchRadioData = async () => {
+    try {
+      const [streamRes, schedRes] = await Promise.all([
+        fetch('/api/streams?type=RADIO', { cache: 'no-store' }),
+        fetch('/api/schedule', { cache: 'no-store' })
+      ]);
+
+      if (streamRes.ok) {
+        const streamData = await streamRes.json();
+        setStreamConfig(streamData);
       }
+
+      if (schedRes.ok) {
+        const schedData = await schedRes.json();
+        setSchedule(schedData);
+      }
+    } catch (e) {
+      console.error("Failed to fetch radio data:", e);
     }
   };
 
-  const schedule = [
-    {
-      id: 1,
-      time: "06:00 - 09:00",
-      title: "Barke Da Sallah & Morning Pulse",
-      presenter: "Balarabe Hadejia & Hadiza Gumel",
-      status: "On Air",
-    },
-    {
-      id: 2,
-      time: "10:00 - 11:30",
-      title: "Jigawa Business & Agriculture Today",
-      presenter: "Fatima Garba",
-      status: "Scheduled",
-    },
-    {
-      id: 3,
-      time: "12:00 - 14:00",
-      title: "Arewa Heritage & Cultural Beats",
-      presenter: "Balarabe Hadejia",
-      status: "Scheduled",
-    },
-    {
-      id: 4,
-      time: "15:00 - 16:30",
-      title: "Youth Voice & Innovation Hour",
-      presenter: "Zainab Suleiman",
-      status: "Scheduled",
-    },
-    {
-      id: 5,
-      time: "20:30 - 22:00",
-      title: "Jigawa Sports Round-up",
-      presenter: "Mustapha Babura",
-      status: "Scheduled",
-    },
-  ];
+  const togglePlay = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (isPlaying) {
+      audio.pause();
+      setIsPlaying(false);
+      setIsBuffering(false);
+    } else {
+      setIsBuffering(true);
+      setStreamError(null);
+
+      const primaryUrl = streamConfig?.streamUrl || "https://stream.zeno.fm/f3wvbbqndg8uv";
+      const backupUrl = "https://icecast.omroep.nl/radio1-bb-mp3";
+
+      if (audio.src !== primaryUrl && audio.src !== backupUrl) {
+        audio.src = primaryUrl;
+      }
+
+      const startPlayback = (url: string, isRetry = false) => {
+        audio.src = url;
+        audio.play()
+          .then(() => {
+            setIsPlaying(true);
+            setIsBuffering(false);
+            setStreamError(null);
+          })
+          .catch(error => {
+            if (error.name === 'AbortError') return;
+            if (!isRetry && url !== backupUrl) {
+              console.warn("Primary radio feed failed, switching to backup live feed...");
+              startPlayback(backupUrl, true);
+            } else {
+              console.warn("Live radio playback error:", error.message);
+              setStreamError("Unable to connect to live stream. Tap Retry to reconnect.");
+              setIsBuffering(false);
+              setIsPlaying(false);
+            }
+          });
+      };
+
+      startPlayback(audio.src || primaryUrl);
+    }
+  };
+
+  const handleVolumeChange = (newVol: number) => {
+    setVolume(newVol);
+    if (newVol > 0 && isMuted) {
+      setIsMuted(false);
+    }
+    if (audioRef.current) {
+      audioRef.current.volume = newVol;
+    }
+  };
+
+  const toggleMute = () => {
+    if (isMuted) {
+      setIsMuted(false);
+      if (audioRef.current) audioRef.current.volume = volume;
+    } else {
+      setIsMuted(true);
+      if (audioRef.current) audioRef.current.volume = 0;
+    }
+  };
+
+  const handleShare = async () => {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: "360 Radio 98.5 FM Dutse",
+          text: `Listening to ${streamConfig?.currentShow || "Live Broadcast"} on 360 Radio 98.5 FM Dutse!`,
+          url: window.location.href
+        });
+      } catch (err) {}
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      alert("Stream link copied to clipboard!");
+    }
+  };
+
+  const formatScheduleTime = (startTime: string, endTime: string) => {
+    const start = new Date(startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const end = new Date(endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return `${start} - ${end}`;
+  };
 
   return (
-    <div className="bg-[#050a15] min-h-screen py-16 relative overflow-hidden">
+    <div className="bg-slate-950 min-h-screen pt-28 pb-16 relative overflow-hidden">
       
-      <style>{`
-        @keyframes eq-play {
-          0% { transform: scaleY(0.3); }
-          50% { transform: scaleY(1); }
-          100% { transform: scaleY(0.3); }
-        }
-        @keyframes bass-thump {
-          0% { transform: scale(1); box-shadow: 0 0 20px rgba(0, 208, 132, 0.2); }
-          50% { transform: scale(1.02); box-shadow: 0 0 50px rgba(0, 208, 132, 0.6); }
-          100% { transform: scale(1); box-shadow: 0 0 20px rgba(0, 208, 132, 0.2); }
-        }
-        .animate-eq {
-          animation: eq-play 1s ease-in-out infinite alternate;
-          transform-origin: bottom;
-        }
-        .bass-hover:hover {
-          animation: bass-thump 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-          box-shadow: 0 20px 50px -10px rgba(0, 208, 132, 0.4), 0 0 40px rgba(0, 208, 132, 0.2) inset;
-          border-color: rgba(0, 208, 132, 0.5);
-        }
-      `}</style>
+      {/* Cinematic Background Glows */}
+      <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[150px] pointer-events-none mix-blend-screen" />
+      <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[150px] pointer-events-none mix-blend-screen" />
 
-      {/* Audio Element */}
-      <audio ref={audioRef} />
+      {/* Real HTML5 Audio Element */}
+      <audio ref={audioRef} preload="none" playsInline crossOrigin="anonymous" />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* Header Section */}
-        <div className="text-center mb-12">
-          <span className="inline-flex items-center gap-2 bg-brand-accent/10 border border-brand-accent/30 text-brand-accent font-bold px-5 py-2 rounded-full text-xs tracking-widest uppercase mb-6 shadow-[0_0_15px_rgba(0,208,132,0.2)]">
-            <span className="w-2 h-2 bg-brand-accent rounded-full animate-pulse"></span>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="text-center mb-12"
+        >
+          <span className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/30 text-blue-400 font-black px-5 py-2 rounded-full text-xs tracking-widest uppercase mb-6 shadow-[0_0_15px_rgba(37,99,235,0.2)]">
+            <Radio className="w-4 h-4" />
             LIVE STREAMING • 98.5 FM DUTSE
           </span>
-          <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-6 tracking-tight drop-shadow-lg">
-            Listen Live to 360 Radio
+          <h1 className="text-5xl md:text-7xl font-black text-white mb-4 tracking-tight drop-shadow-lg">
+            Listen <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500">Live</span>
           </h1>
-          <p className="text-gray-400 text-sm md:text-lg max-w-xl mx-auto font-light leading-relaxed">
-            Broadcasting live 24/7 across Jigawa State with high fidelity stereo audio feed.
+          <p className="text-slate-400 text-base md:text-lg max-w-xl mx-auto font-medium leading-relaxed">
+            Broadcasting live 24/7 across Jigawa State with high fidelity digital stereo audio feed.
           </p>
-        </div>
+        </motion.div>
 
-        {/* Premium Glassmorphic Player Card with Futuristic Bass Hover */}
-        <div className="bass-hover bg-white/[0.03] backdrop-blur-3xl border border-white/10 rounded-3xl p-8 md:p-12 mb-20 relative flex flex-col md:flex-row items-center justify-between gap-10 transition-all duration-300">
+        {/* Premium Glassmorphic Player Card */}
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className={`relative bg-slate-900/50 backdrop-blur-3xl border rounded-[2.5rem] p-8 md:p-12 mb-16 flex flex-col gap-8 transition-all duration-700 overflow-hidden shadow-2xl ${
+            isPlaying 
+              ? 'shadow-[0_0_80px_-20px_rgba(37,99,235,0.4)] border-blue-500/40 bg-slate-900/70' 
+              : 'border-white/10 hover:border-slate-700'
+          }`}
+        >
           
-          {/* Ambient background effects */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-brand-accent/20 rounded-full blur-[100px] pointer-events-none group-hover:bg-brand-accent/30 transition-colors" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-600/10 rounded-full blur-[100px] pointer-events-none" />
+          {/* Ambient background glow inside player */}
+          <div className={`absolute top-0 right-0 w-96 h-96 rounded-full blur-[100px] pointer-events-none transition-colors duration-1000 ${isPlaying ? 'bg-blue-600/20' : 'bg-transparent'}`} />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-600/10 rounded-full blur-[100px] pointer-events-none" />
           
-          <div className="flex items-center gap-8 relative z-10 w-full md:w-auto">
-            {/* Visualizer & Icon Container */}
-            <div className="bg-[#0a0f1d] w-24 h-24 rounded-2xl flex items-center justify-center shrink-0 border border-white/10 shadow-2xl relative overflow-hidden group">
-              <div className="absolute inset-0 bg-brand-accent/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-              
-              {isPlaying ? (
-                // Animated EQ Visualizer
-                <div className="flex items-end justify-center gap-1.5 w-full h-12">
-                  {[1, 2, 3, 4, 5].map((bar) => (
-                    <div 
-                      key={bar} 
-                      className="w-2 bg-brand-accent rounded-t-sm animate-eq" 
-                      style={{ 
-                        height: `${Math.random() * 100}%`,
-                        animationDelay: `${bar * 0.1}s`,
-                        animationDuration: `${0.6 + Math.random() * 0.4}s`
-                      }} 
-                    />
-                  ))}
-                </div>
-              ) : (
-                // Static Radio Icon
-                <svg className="text-brand-accent transition-transform transform group-hover:scale-110" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="2"></circle>
-                  <path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path>
-                </svg>
-              )}
-            </div>
+          {/* Main Controls Row */}
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8 relative z-10">
             
-            {/* Stream Info */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-brand-accent font-bold text-xs tracking-[0.2em] uppercase mb-2">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"></path><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path></svg>
-                {isPlaying ? "PLAYING LIVE" : "ON AIR NOW"}
-              </div>
-              <h2 className="text-white font-extrabold text-2xl md:text-4xl leading-tight drop-shadow-md">
-                Barke Da Sallah &amp; Morning Pulse
-              </h2>
-              <p className="text-gray-400 text-xs md:text-sm font-medium">
-                Transmitting on 98.5 FM Dutse • <span className="text-gray-300">1284 Active Listeners online</span>
-              </p>
-            </div>
-          </div>
-          
-          {/* Play/Pause Button Area */}
-          <div className="flex flex-col items-center gap-4 relative z-10 shrink-0 mt-6 md:mt-0">
-            <button 
-              onClick={togglePlay}
-              className={`w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 transform hover:scale-110 active:scale-95 ${
+            {/* Visualizer & Icon Container */}
+            <div className="flex items-center gap-6 w-full md:w-auto">
+              <div className={`w-28 h-28 md:w-32 md:h-32 rounded-3xl flex items-center justify-center shrink-0 border shadow-2xl relative overflow-hidden transition-all duration-500 ${
                 isPlaying 
-                ? 'bg-red-500 hover:bg-red-400 shadow-[0_0_40px_rgba(239,68,68,0.5)]' 
-                : 'bg-brand-accent hover:bg-emerald-400 shadow-[0_0_40px_rgba(0,208,132,0.5)]'
-              }`}
-            >
-              {isPlaying ? (
-                <svg className="text-white" width="36" height="36" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
-              ) : (
-                <svg className="text-[#050a15] ml-2" width="36" height="36" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-              )}
-            </button>
-            <span className="text-gray-300 text-xs font-bold tracking-widest uppercase">
-              {isPlaying ? "Pause Stream" : "Tap to Start"}
-            </span>
-          </div>
-        </div>
-
-        {/* Futuristic Schedule List */}
-        <div>
-          <div className="flex items-center gap-3 mb-8">
-            <div className="h-[2px] w-8 bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]"></div>
-            <h3 className="text-2xl font-bold text-white tracking-wide">Radio Schedule Lineup</h3>
-          </div>
-          <div className="space-y-5">
-            {schedule.map((item, index) => (
-              <div 
-                key={item.id} 
-                className="group relative bg-[#0a0f1d] border border-white/5 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 overflow-hidden transition-all duration-300 hover:border-brand-accent/40 hover:-translate-y-1 hover:shadow-[0_15px_30px_-10px_rgba(0,208,132,0.2)] cursor-pointer"
-              >
-                {/* Hover gradient sweep */}
-                <div className="absolute inset-0 bg-gradient-to-r from-brand-accent/0 via-brand-accent/5 to-brand-accent/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-out" />
+                  ? 'bg-slate-950 border-blue-500/50 shadow-[0_0_30px_rgba(59,130,246,0.3)]' 
+                  : 'bg-slate-950/60 border-white/10'
+              }`}>
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-600/15 to-transparent" />
                 
-                <div className="space-y-3 relative z-10">
-                  <div className="flex items-center gap-2 text-sm font-bold text-brand-accent">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                    {item.time}
+                {isBuffering ? (
+                  <Loader2 className="w-10 h-10 text-blue-400 animate-spin relative z-10" />
+                ) : isPlaying ? (
+                  // Dynamic Multi-Bar EQ Visualizer
+                  <div className="flex items-end justify-center gap-1.5 w-full h-14 relative z-10 px-4">
+                    {[1, 2, 3, 4, 5, 6, 7].map((bar) => (
+                      <motion.div 
+                        key={bar} 
+                        className="w-2 bg-gradient-to-t from-blue-600 to-indigo-400 rounded-t-sm"
+                        animate={{
+                          height: ["15%", "100%", "30%", "85%", "15%"]
+                        }}
+                        transition={{
+                          duration: 0.5 + (bar % 3) * 0.2,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                          delay: bar * 0.08
+                        }}
+                      />
+                    ))}
                   </div>
-                  <h4 className="text-xl font-bold text-white group-hover:text-brand-accent transition-colors">{item.title}</h4>
-                  <p className="text-gray-500 text-sm font-medium">
-                    <span className="text-gray-600 uppercase text-xs tracking-wider mr-2">Presenter</span> 
-                    {item.presenter}
-                  </p>
-                </div>
-                
-                <div className="shrink-0 mt-2 md:mt-0 relative z-10">
-                  {item.status === "On Air" ? (
-                    <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-bold bg-brand-accent/10 text-brand-accent border border-brand-accent/30 shadow-[0_0_15px_rgba(0,208,132,0.15)]">
-                      <span className="w-2 h-2 bg-brand-accent rounded-full animate-pulse shadow-[0_0_8px_rgba(0,208,132,1)]" />
-                      ON AIR NOW
-                    </span>
+                ) : (
+                  <Headphones className="w-12 h-12 text-slate-500" />
+                )}
+              </div>
+              
+              {/* Stream Info */}
+              <div className="space-y-2">
+                <div className={`flex items-center gap-2 font-black text-xs tracking-[0.2em] uppercase ${isPlaying ? 'text-blue-400' : 'text-slate-500'}`}>
+                  {isBuffering ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      CONNECTING FEED...
+                    </>
+                  ) : isPlaying ? (
+                    <>
+                      <Activity className="w-4 h-4 animate-pulse text-blue-400" />
+                      PLAYING LIVE (98.5 FM)
+                    </>
                   ) : (
-                    <span className="inline-flex items-center px-5 py-2 rounded-full text-xs font-bold bg-white/5 text-gray-400 border border-white/10 uppercase tracking-widest">
-                      Scheduled
+                    <>
+                      <Radio className="w-4 h-4" />
+                      ON AIR NOW
+                    </>
+                  )}
+                </div>
+                <h2 className="text-white font-black text-2xl md:text-4xl leading-tight drop-shadow-md">
+                  {streamConfig?.currentShow || "Barke Da Sallah & Pulse"}
+                </h2>
+                <div className="text-slate-400 text-xs md:text-sm font-bold flex flex-wrap items-center gap-3 pt-1">
+                  <span>98.5 FM Stereo Feed</span>
+                  <span className="w-1 h-1 rounded-full bg-slate-600" />
+                  <span>Dutse Studio</span>
+                  {isPlaying && (
+                    <span className="inline-flex items-center gap-1.5 bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full text-xs font-black border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+                      <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                      {liveListeners.toLocaleString()} {liveListeners === 1 ? 'Listener' : 'Listeners'}
                     </span>
                   )}
                 </div>
-                
               </div>
-            ))}
+            </div>
+            
+            {/* Big Play/Pause Button */}
+            <div className="flex flex-col items-center gap-3 relative z-10 shrink-0">
+              <motion.button 
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.94 }}
+                onClick={togglePlay}
+                disabled={isBuffering}
+                className={`w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl ${
+                  isPlaying 
+                  ? 'bg-slate-900 hover:bg-slate-800 border-2 border-blue-500/60 text-white shadow-[0_0_30px_rgba(59,130,246,0.3)]' 
+                  : 'bg-gradient-to-tr from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-[0_0_40px_rgba(37,99,235,0.5)]'
+                }`}
+              >
+                {isBuffering ? (
+                  <Loader2 className="w-10 h-10 text-white animate-spin" />
+                ) : isPlaying ? (
+                  <Pause className="w-10 h-10 text-white fill-current" />
+                ) : (
+                  <Play className="w-10 h-10 text-white fill-current ml-1" />
+                )}
+              </motion.button>
+              <span className="text-slate-400 text-[11px] font-black tracking-widest uppercase">
+                {isBuffering ? "Connecting..." : isPlaying ? "Pause Live Stream" : "Tap to Listen"}
+              </span>
+            </div>
+
           </div>
-        </div>
+
+          {/* Bottom Bar: Volume Slider & Actions */}
+          <div className="pt-6 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 relative z-10">
+            
+            {/* Volume Control */}
+            <div className="flex items-center gap-3 w-full sm:w-64">
+              <button 
+                onClick={toggleMute}
+                className="text-slate-400 hover:text-white p-1 transition-colors"
+                title={isMuted ? "Unmute" : "Mute"}
+              >
+                {isMuted || volume === 0 ? (
+                  <VolumeX className="w-5 h-5 text-red-400" />
+                ) : (
+                  <Volume2 className="w-5 h-5 text-blue-400" />
+                )}
+              </button>
+              <input 
+                type="range" 
+                min="0" 
+                max="1" 
+                step="0.01" 
+                value={isMuted ? 0 : volume}
+                onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+                className="w-full accent-blue-500 h-1.5 bg-slate-800 rounded-full appearance-none cursor-pointer"
+              />
+              <span className="text-[11px] font-mono text-slate-500 w-8 text-right">
+                {isMuted ? "0%" : `${Math.round(volume * 100)}%`}
+              </span>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={handleShare}
+                className="px-4 py-2 bg-slate-800/60 hover:bg-slate-800 border border-slate-700 text-slate-300 text-xs font-bold rounded-xl transition-all flex items-center gap-2"
+              >
+                <Share2 className="w-3.5 h-3.5" /> Share Stream
+              </button>
+              <Link 
+                href="/watch-live" 
+                className="px-4 py-2 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-400 text-xs font-bold rounded-xl transition-all flex items-center gap-2"
+              >
+                <Tv className="w-3.5 h-3.5" /> Watch Live TV
+              </Link>
+            </div>
+
+          </div>
+
+          {/* Error Banner if connection fails */}
+          <AnimatePresence>
+            {streamError && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="p-4 bg-red-950/60 border border-red-800/60 rounded-2xl flex items-center justify-between gap-4 text-xs font-bold text-red-300"
+              >
+                <span>{streamError}</span>
+                <button 
+                  onClick={togglePlay}
+                  className="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors flex items-center gap-1.5 text-xs font-bold shrink-0"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" /> Retry
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+        </motion.div>
+
+        {/* Schedule Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+        >
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <div className="h-[2px] w-8 bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]"></div>
+              <h3 className="text-2xl font-black text-white tracking-wide">Today's Broadcast Lineup</h3>
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            {schedule.length === 0 ? (
+              <div className="text-center text-slate-500 py-8 bg-slate-900/40 rounded-2xl border border-slate-800">
+                No scheduled programs found.
+              </div>
+            ) : (
+              schedule.map((item, index) => (
+                <motion.div 
+                  key={item.id} 
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: 0.5 + (index * 0.1) }}
+                  className={`group relative bg-slate-900/40 border border-white/5 rounded-[1.5rem] p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 overflow-hidden transition-all duration-300 hover:border-blue-500/30 hover:bg-slate-900/80 cursor-pointer ${
+                    item.isLive ? 'shadow-[0_10px_30px_-10px_rgba(37,99,235,0.2)] border-blue-900/30 bg-slate-900/60' : ''
+                  }`}
+                >
+                  {/* Hover gradient sweep */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-500/5 to-blue-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-out" />
+                  
+                  <div className="space-y-3 relative z-10">
+                    <div className={`flex items-center gap-2 text-sm font-bold ${item.isLive ? "text-blue-400" : "text-slate-500"}`}>
+                      <Clock className="w-4 h-4" />
+                      {formatScheduleTime(item.startTime, item.endTime)}
+                    </div>
+                    <h4 className="text-xl font-black text-white group-hover:text-blue-400 transition-colors">{item.title}</h4>
+                    <p className="text-slate-400 text-sm font-medium">
+                      <span className="text-slate-500 uppercase text-xs tracking-widest font-bold mr-2">Host</span> 
+                      {item.host?.name || "360 Broadcaster"}
+                    </p>
+                  </div>
+                  
+                  <div className="shrink-0 mt-2 md:mt-0 relative z-10">
+                    {item.isLive ? (
+                      <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black bg-blue-600 text-white shadow-[0_0_20px_rgba(37,99,235,0.4)] uppercase tracking-widest">
+                        <span className="w-2 h-2 bg-white rounded-full animate-pulse shadow-[0_0_8px_rgba(255,255,255,1)]" />
+                        ON AIR NOW
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-5 py-2.5 rounded-xl text-xs font-bold bg-white/5 text-slate-400 border border-white/10 uppercase tracking-widest">
+                        {item.type}
+                      </span>
+                    )}
+                  </div>
+                  
+                </motion.div>
+              ))
+            )}
+          </div>
+        </motion.div>
 
       </div>
     </div>
