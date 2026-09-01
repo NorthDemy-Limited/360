@@ -1,50 +1,13 @@
 import React from 'react';
 
 export default function AboutPage() {
-  const leadership = [
-    {
-      id: 1,
-      name: "Alhaji Ibrahim Dutse",
-      role: "General Manager / CEO",
-      department: "MANAGEMENT",
-      image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200",
-    },
-    {
-      id: 2,
-      name: "Malama Hadiza Gumel",
-      role: "Station Controller",
-      department: "MANAGEMENT",
-      image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=200",
-    },
-    {
-      id: 3,
-      name: "Malam Aminu Kazaure",
-      role: "Editor-in-Chief",
-      department: "NEWSROOM",
-      image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=200",
-    },
-    {
-      id: 4,
-      name: "Fatima Garba",
-      role: "Head of Programming",
-      department: "PROGRAMS",
-      image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=200",
-    },
-    {
-      id: 5,
-      name: "Balarabe Hadejia",
-      role: "Senior On-Air Personality",
-      department: "PROGRAMS",
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200",
-    },
-    {
-      id: 6,
-      name: "Engr. Danladi Ringim",
-      role: "Chief Broadcast Engineer",
-      department: "ENGINEERING",
-      image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=200",
-    }
-  ];
+  const leadership: Array<{
+    id: number;
+    name: string;
+    role: string;
+    department: string;
+    image: string;
+  }> = [];
 
   return (
     <div className="bg-[#050a15] min-h-screen relative overflow-hidden">
@@ -115,34 +78,40 @@ export default function AboutPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {leadership.map((leader, index) => (
-              <div 
-                key={leader.id} 
-                className="group bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/5 hover:border-white/20 transition-all duration-300 flex items-center gap-6 cursor-pointer hover:bg-white/10"
-              >
-                <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 relative">
-                  <img 
-                    src={leader.image} 
-                    alt={leader.name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 grayscale group-hover:grayscale-0"
-                  />
-                  <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-2xl"></div>
+          {leadership.length === 0 ? (
+            <div className="text-center py-12 px-6 bg-white/5 rounded-3xl border border-white/5 max-w-xl mx-auto backdrop-blur-sm">
+              <p className="text-slate-400 font-medium">Official station leadership profiles will be updated shortly.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {leadership.map((leader, index) => (
+                <div 
+                  key={leader.id} 
+                  className="group bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/5 hover:border-white/20 transition-all duration-300 flex items-center gap-6 cursor-pointer hover:bg-white/10"
+                >
+                  <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 relative">
+                    <img 
+                      src={leader.image} 
+                      alt={leader.name}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 grayscale group-hover:grayscale-0"
+                    />
+                    <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-2xl"></div>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest block mb-1">
+                      {leader.department}
+                    </span>
+                    <h3 className="text-lg font-bold text-white mb-1 group-hover:text-blue-300 transition-colors">
+                      {leader.name}
+                    </h3>
+                    <p className="text-sm text-slate-400">
+                      {leader.role}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest block mb-1">
-                    {leader.department}
-                  </span>
-                  <h3 className="text-lg font-bold text-white mb-1 group-hover:text-blue-300 transition-colors">
-                    {leader.name}
-                  </h3>
-                  <p className="text-sm text-slate-400">
-                    {leader.role}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
       </div>
