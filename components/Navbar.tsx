@@ -28,13 +28,13 @@ export default function Navbar() {
   ];
 
   return (
-    <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-white/90 backdrop-blur-xl border-b border-gray-200/50 shadow-sm py-0' : 'bg-transparent py-2 border-b border-transparent'}`}>
+    <nav className={`w-full transition-all duration-300 ${scrolled ? 'bg-white/95 backdrop-blur-xl border-b border-gray-200/50 shadow-md py-0' : 'bg-slate-950/85 backdrop-blur-md py-1.5 sm:py-2 border-b border-white/10'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
+        <div className="flex justify-between items-center h-16 sm:h-20">
           
           {/* Logo */}
-          <Link href="/" className="flex-shrink-0 flex items-center gap-3 cursor-pointer group z-50">
-            <div className="relative w-12 h-12 rounded-xl overflow-hidden shadow-lg group-hover:scale-105 transition-transform shrink-0 border border-slate-700/50 bg-slate-900">
+          <Link href="/" className="flex-shrink-0 flex items-center gap-2.5 sm:gap-3 cursor-pointer group z-50">
+            <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-xl overflow-hidden shadow-lg group-hover:scale-105 transition-transform shrink-0 border border-slate-700/50 bg-slate-900">
               <img 
                 src="/icons/360.jpeg" 
                 alt="360 Radio & TV" 
@@ -42,10 +42,10 @@ export default function Navbar() {
               />
             </div>
             <div className="flex flex-col">
-              <span className={`font-extrabold text-2xl leading-tight tracking-tight ${scrolled ? 'text-gray-900' : 'text-gray-900 lg:text-white'}`}>
+              <span className={`font-extrabold text-xl sm:text-2xl leading-tight tracking-tight ${scrolled ? 'text-gray-900' : 'text-white'}`}>
                 360 <span className="font-bold opacity-90">RADIO</span> <span className="text-red-500">&amp;</span> <span className="text-red-500 font-bold">TV</span>
               </span>
-              <span className={`text-xs font-bold tracking-widest uppercase ${scrolled ? 'text-blue-600' : 'text-blue-600 lg:text-blue-400'}`}>
+              <span className={`text-[10px] sm:text-xs font-bold tracking-widest uppercase ${scrolled ? 'text-blue-600' : 'text-blue-400'}`}>
                 Dutse, Jigawa State
               </span>
             </div>

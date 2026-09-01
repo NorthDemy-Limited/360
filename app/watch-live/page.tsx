@@ -145,7 +145,7 @@ export default function WatchLivePage() {
   };
 
   return (
-    <div className="bg-slate-950 min-h-screen pt-28 pb-16 relative overflow-hidden">
+    <div className="bg-slate-950 min-h-screen pt-32 sm:pt-36 pb-16 relative overflow-hidden">
       
       {/* Background Cinematic Ambilight Glow */}
       <div className="absolute top-[30vh] left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-red-600/20 rounded-[100%] blur-[120px] pointer-events-none mix-blend-screen" />

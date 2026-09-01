@@ -27,7 +27,7 @@ export default function AboutPage() {
         }
       `}</style>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 sm:pt-36 pb-20 relative z-10">
         
         {/* Hero Section */}
         <div className="text-center max-w-3xl mx-auto mb-20 animate-staggered" style={{ animationDelay: '0s' }}>

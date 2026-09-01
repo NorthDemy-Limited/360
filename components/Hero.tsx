@@ -46,7 +46,7 @@ export default function Hero() {
   };
 
   return (
-    <div className="relative min-h-[100vh] lg:min-h-screen flex items-center justify-center overflow-hidden bg-slate-950 pt-32 pb-16 lg:pt-20 lg:pb-0">
+    <div className="relative min-h-[100vh] lg:min-h-screen flex items-center justify-center overflow-hidden bg-slate-950 pt-24 sm:pt-28 lg:pt-32 pb-16 lg:pb-0">
       <style>{`
         @keyframes dynamicZoomDutse {
           0% { 

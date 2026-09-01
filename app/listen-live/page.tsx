@@ -259,7 +259,7 @@ export default function ListenLivePage() {
   };
 
   return (
-    <div className="bg-slate-950 min-h-screen pt-28 pb-16 relative overflow-hidden">
+    <div className="bg-slate-950 min-h-screen pt-32 sm:pt-36 pb-16 relative overflow-hidden">
       
       {/* Cinematic Background Glows */}
       <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[150px] pointer-events-none mix-blend-screen" />

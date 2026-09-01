@@ -56,7 +56,7 @@ export default function NewsroomPage() {
       `}</style>
 
       {/* Main Header */}
-      <div className="bg-[#050a15] border-b border-white/5 pt-16 pb-8 px-4 sm:px-6 lg:px-8 relative z-10 animate-staggered" style={{ animationDelay: '0s' }}>
+      <div className="bg-[#050a15] border-b border-white/5 pt-32 sm:pt-36 pb-8 px-4 sm:px-6 lg:px-8 relative z-10 animate-staggered" style={{ animationDelay: '0s' }}>
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
             <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-2">

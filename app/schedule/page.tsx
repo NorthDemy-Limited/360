@@ -91,7 +91,7 @@ export default function SchedulePage() {
   });
 
   return (
-    <div className="bg-[#050a15] min-h-screen py-16 relative overflow-hidden">
+    <div className="bg-[#050a15] min-h-screen pt-32 sm:pt-36 pb-16 relative overflow-hidden">
       
       {/* Background Ambient Glows */}
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
@@ -124,7 +124,7 @@ export default function SchedulePage() {
         </div>
 
         {/* Sticky Glassmorphic Filter Controls */}
-        <div className="sticky top-20 z-40 bg-[#0f172a]/70 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] p-4 md:p-6 mb-12 flex flex-col items-center animate-staggered" style={{ animationDelay: '0.1s' }}>
+        <div className="sticky top-28 sm:top-32 z-40 bg-[#0f172a]/70 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] p-4 md:p-6 mb-12 flex flex-col items-center animate-staggered" style={{ animationDelay: '0.1s' }}>
           
           {/* Network Toggle */}
           <div className="flex flex-wrap items-center justify-center gap-3 mb-6">

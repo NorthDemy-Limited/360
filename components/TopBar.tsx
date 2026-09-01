@@ -56,7 +56,7 @@ export default function TopBar() {
   const currentMarquee = marqueeAds.length > 0 ? marqueeAds[activeAdIndex] : null;
 
   return (
-    <div className="bg-[#050811] text-white text-xs border-b border-white/10 relative z-40 overflow-hidden font-sans">
+    <div className="hidden md:block bg-[#050811] text-white text-xs border-b border-white/10 relative z-40 overflow-hidden font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex flex-col md:flex-row justify-between items-center gap-2">
         
         {/* Left: Professional Top Marquee (STRICTLY ONLY Marquee-Assigned Ads) */}
