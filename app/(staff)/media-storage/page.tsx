@@ -360,7 +360,7 @@ export default function MediaStoragePage() {
             initial={{ opacity: 0, y: -25, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            transition={{ duration: 0.35, ease: "easeOut" }}
             className={`fixed top-6 right-6 z-50 max-w-md w-[calc(100%-3rem)] bg-slate-900/95 backdrop-blur-2xl border rounded-2xl p-4 shadow-[0_15px_50px_rgba(0,0,0,0.8)] text-white overflow-hidden ${
               toast.type === 'success' ? 'border-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.25)]' :
               toast.type === 'warning' ? 'border-amber-500/50 shadow-[0_0_30px_rgba(245,158,11,0.25)]' :

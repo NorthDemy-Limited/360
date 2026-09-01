@@ -136,7 +136,7 @@ export default function NewsSection() {
                   initial={{ opacity: 0, scale: 0.9, x: 50 }}
                   animate={{ opacity: 1, scale: 1, x: 0 }}
                   exit={{ opacity: 0, scale: 0.9, x: -50 }}
-                  transition={{ duration: 0.5, type: "spring", bounce: 0.3 }}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
                   onClick={() => setSelectedArticle(item)}
                   className={`group flex flex-col bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] transition-all duration-500 cursor-pointer ${
                     index > 0 ? 'hidden md:flex' : 'flex'

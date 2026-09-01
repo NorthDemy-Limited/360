@@ -8,7 +8,7 @@ import { Radio, Tv, Clock, ArrowRight, Activity } from "lucide-react";
 interface ScheduleItem {
   id: string;
   title: string;
-  type: "RADIO" | "TV";
+  type: "RADIO" | "TV" | "BOTH" | string;
   startTime: string;
   endTime: string;
   isLive: boolean;
