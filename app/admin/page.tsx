@@ -85,7 +85,7 @@ export default function AdminDashboardPage() {
       <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Welcome Block */}
-        <div className="lg:col-span-8 bg-slate-900/40 backdrop-blur-md rounded-3xl p-8 lg:p-10 border border-slate-800/60 shadow-2xl relative overflow-hidden group">
+        <div className="lg:col-span-8 bg-slate-900/40 backdrop-blur-md rounded-3xl p-6 sm:p-8 lg:p-10 border border-slate-800/60 shadow-2xl relative overflow-hidden group">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
           
           <div className="relative z-10">
@@ -93,46 +93,46 @@ export default function AdminDashboardPage() {
               <Activity className="w-3.5 h-3.5" />
               System Status: Optimal
             </span>
-            <h2 className="text-4xl font-extrabold text-white mb-3 tracking-tight">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white mb-3 tracking-tight">
               Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Alhaji Dutse</span>
             </h2>
-            <p className="text-slate-400 font-medium max-w-xl leading-relaxed mb-8 text-sm">
+            <p className="text-slate-400 font-medium max-w-xl leading-relaxed mb-6 sm:mb-8 text-xs sm:text-sm">
               Your station terminal is securely connected to Dutse Headquarters. All primary broadcast streams (Radio 98.5 FM and 360 Digital TV) are currently online and performing optimally.
             </p>
             
-            <div className="flex flex-wrap gap-4">
-              <Link href="/admin/programs" className="bg-white hover:bg-slate-100 text-slate-900 font-bold text-sm px-6 py-3 rounded-full shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all flex items-center gap-2 group/btn">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4">
+              <Link href="/admin/programs" className="w-full sm:w-auto bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs sm:text-sm px-5 sm:px-6 py-3 rounded-full shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all flex items-center justify-center gap-2 group/btn">
                 <CalendarPlus className="w-4 h-4 text-slate-700 group-hover/btn:scale-110 transition-transform" />
                 Add Schedule
               </Link>
-              <Link href="/admin/newsroom" className="bg-slate-800/80 hover:bg-slate-700 text-white font-bold text-sm px-6 py-3 rounded-full border border-slate-700 transition-all flex items-center gap-2 group/btn">
+              <Link href="/admin/newsroom" className="w-full sm:w-auto bg-slate-800/80 hover:bg-slate-700 text-white font-bold text-xs sm:text-sm px-5 sm:px-6 py-3 rounded-full border border-slate-700 transition-all flex items-center justify-center gap-2 group/btn">
                 <FileText className="w-4 h-4 text-blue-400 group-hover/btn:scale-110 transition-transform" />
                 Publish News
               </Link>
-              <Link href="/admin/media-storage" className="bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 font-bold text-sm px-6 py-3 rounded-full border border-purple-500/30 transition-all flex items-center gap-2 group/btn">
+              <Link href="/admin/media-storage" className="w-full sm:w-auto bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 font-bold text-xs sm:text-sm px-5 sm:px-6 py-3 rounded-full border border-purple-500/30 transition-all flex items-center justify-center gap-2 group/btn">
                 <ShieldCheck className="w-4 h-4 text-purple-400 group-hover/btn:scale-110 transition-transform" />
-                Media Vault &amp; Authorization
+                Media Vault
               </Link>
             </div>
           </div>
         </div>
 
         {/* Quick Date/Time Block */}
-        <div className="lg:col-span-4 bg-gradient-to-br from-indigo-900/40 to-blue-900/20 backdrop-blur-md rounded-3xl p-8 border border-indigo-500/20 shadow-2xl flex flex-col justify-between relative overflow-hidden">
+        <div className="lg:col-span-4 bg-gradient-to-br from-indigo-900/40 to-blue-900/20 backdrop-blur-md rounded-3xl p-6 sm:p-8 border border-indigo-500/20 shadow-2xl flex flex-col justify-between relative overflow-hidden">
           <div className="absolute top-0 right-0 p-6 opacity-20">
-            <Clock className="w-24 h-24 text-indigo-300" />
+            <Clock className="w-20 sm:w-24 h-20 sm:h-24 text-indigo-300" />
           </div>
           <div className="relative z-10">
             <span className="text-[10px] font-black text-indigo-300 uppercase tracking-widest block mb-1">Local Time</span>
-            <h3 className="text-3xl font-bold text-white tracking-tight font-mono">08:45 AM</h3>
-            <p className="text-indigo-200/60 text-sm mt-1">West Africa Time (WAT)</p>
+            <h3 className="text-2xl sm:text-3xl font-bold text-white tracking-tight font-mono">08:45 AM</h3>
+            <p className="text-indigo-200/60 text-xs sm:text-sm mt-1">West Africa Time (WAT)</p>
           </div>
-          <div className="relative z-10 mt-8">
+          <div className="relative z-10 mt-6 sm:mt-8">
             <span className="text-[10px] font-black text-indigo-300 uppercase tracking-widest block mb-1">Date</span>
-            <h3 className="text-xl font-bold text-white tracking-tight">
+            <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight">
               {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
             </h3>
-            <p className="text-indigo-200/60 text-sm mt-1">Dutse, Jigawa State</p>
+            <p className="text-indigo-200/60 text-xs sm:text-sm mt-1">Dutse, Jigawa State</p>
           </div>
         </div>
       </motion.div>
