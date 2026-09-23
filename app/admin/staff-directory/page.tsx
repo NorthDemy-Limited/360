@@ -212,7 +212,7 @@ export default function StaffDirectoryPage() {
 
     setActionLoadingId(member.id);
     try {
-      const res = await fetch(`/api/staff?id=${member.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/staff/${member.id}`, { method: "DELETE" });
       if (res.ok) {
         fetchStaff();
         showToast("Staff Member Removed", `${member.name} was removed from the roster.`, "info");

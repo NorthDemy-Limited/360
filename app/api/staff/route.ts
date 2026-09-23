@@ -14,41 +14,7 @@ export async function GET() {
     });
   } catch (error) {
     console.error("Failed to fetch staff directory:", error);
-    // Graceful fallback for local dev or DB unavailability
-    return NextResponse.json([
-      {
-        id: "usr-1",
-        email: "hadiza.gumel@360radiotv.ng",
-        name: "Hadiza Ibrahim Gumel",
-        role: "STATION_MANAGER",
-        phone: "+234 902 953 5000",
-        avatar: null
-      },
-      {
-        id: "usr-2",
-        email: "aminu.kazaure@360radiotv.ng",
-        name: "Aminu Sani Kazaure",
-        role: "NEWS_EDITOR",
-        phone: "+234 902 953 5000",
-        avatar: null
-      },
-      {
-        id: "usr-3",
-        email: "fatima.garba@360radiotv.ng",
-        name: "Fatima Garba Dutse",
-        role: "PROGRAM_OFFICER",
-        phone: "+234 902 953 5000",
-        avatar: null
-      },
-      {
-        id: "usr-4",
-        email: "balarabe.hadejia@360radiotv.ng",
-        name: "Balarabe Hadejia",
-        role: "PRESENTER",
-        phone: "+234 902 953 5000",
-        avatar: null
-      }
-    ], {
+    return NextResponse.json([], {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate'
       }
@@ -96,5 +62,28 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error("Failed to provision staff account:", error);
     return NextResponse.json({ error: "Failed to provision staff account" }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json({ error: "Staff ID is required" }, { status: 400 });
+    }
+
+    await prisma.$transaction([
+      prisma.program.deleteMany({ where: { hostId: id } }),
+      prisma.news.deleteMany({ where: { authorId: id } }),
+      prisma.notice.deleteMany({ where: { authorId: id } }),
+      prisma.user.delete({ where: { id } })
+    ]);
+
+    return NextResponse.json({ success: true, message: "Staff account removed" });
+  } catch (error) {
+    console.error("Failed to delete staff member:", error);
+    return NextResponse.json({ error: "Failed to delete staff member" }, { status: 500 });
   }
 }

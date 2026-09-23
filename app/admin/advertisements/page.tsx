@@ -41,7 +41,7 @@ export default function AdvertisementBoardPage() {
 
   const fetchCampaigns = async () => {
     try {
-      const res = await fetch("/api/commercials", { cache: 'no-store' });
+      const res = await fetch("/api/commercials?all=true", { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         setCampaigns(data);

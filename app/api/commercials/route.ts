@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const all = searchParams.get("all");
+
     const commercials = await prisma.commercialCampaign.findMany({
-      where: { 
+      where: all === "true" ? undefined : { 
         OR: [
           { status: "ACTIVE" },
           { status: "Active" },
@@ -21,20 +24,7 @@ export async function GET() {
     });
   } catch (error) {
     console.error("Error fetching commercials:", error);
-    // Graceful fallback for local dev or DB unavailability
-    return NextResponse.json([
-      {
-        id: "comm-1",
-        clientName: "Jigawa State Agricultural Development Authority",
-        title: "Jigawa Agro-Allied Fertilizer Campaign",
-        targetMedia: "BANNER",
-        placement: "Full Screen Popup",
-        value: 500000,
-        startDate: new Date().toISOString(),
-        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        status: "ACTIVE"
-      }
-    ], {
+    return NextResponse.json([], {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate',
       }

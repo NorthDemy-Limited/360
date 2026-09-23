@@ -52,9 +52,13 @@ export async function DELETE(
       return NextResponse.json({ error: "Staff ID is required" }, { status: 400 });
     }
 
-    await prisma.user.delete({
-      where: { id }
-    });
+    // Delete dependent records first to prevent foreign key constraints (P2003)
+    await prisma.$transaction([
+      prisma.program.deleteMany({ where: { hostId: id } }),
+      prisma.news.deleteMany({ where: { authorId: id } }),
+      prisma.notice.deleteMany({ where: { authorId: id } }),
+      prisma.user.delete({ where: { id } })
+    ]);
 
     return NextResponse.json({ success: true, message: "Staff account removed" });
   } catch (error) {
