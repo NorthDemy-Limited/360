@@ -85,8 +85,9 @@ export default function ProgramManagementPage() {
   };
 
   const filteredPrograms = programs.filter(prog => {
-    const matchesSearch = prog.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTab = activeTab === "All" || prog.category === activeTab;
+    const titleOrName = prog.title || prog.name || "";
+    const matchesSearch = titleOrName.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesTab = activeTab === "All" || prog.category === activeTab || prog.type === activeTab;
     return matchesSearch && matchesTab;
   });
 
