@@ -12,12 +12,22 @@ export default function NewsroomCMSPage() {
 
   const [articles, setArticles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingArticle, setEditingArticle] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     title: "",
     category: "Local Dutse",
     content: "",
-    imageUrl: ""
+    imageUrl: "",
+    isPublished: true
+  });
+
+  const [editFormData, setEditFormData] = useState({
+    title: "",
+    category: "Local Dutse",
+    content: "",
+    imageUrl: "",
+    isPublished: true
   });
 
   const tabs = [
@@ -52,7 +62,51 @@ export default function NewsroomCMSPage() {
       });
       if (res.ok) {
         setIsCreateModalOpen(false);
-        setFormData({ title: "", category: "Local Dutse", content: "", imageUrl: "" });
+        setFormData({ title: "", category: "Local Dutse", content: "", imageUrl: "", isPublished: true });
+        fetchNews();
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleOpenEdit = (article: any) => {
+    setEditingArticle(article);
+    setEditFormData({
+      title: article.title || "",
+      category: article.category || "Local Dutse",
+      content: article.content || "",
+      imageUrl: article.imageUrl || "",
+      isPublished: article.isPublished !== undefined ? article.isPublished : true
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdate = async () => {
+    if (!editingArticle || !editFormData.title || !editFormData.content) return;
+    try {
+      const res = await fetch(`/api/news/${editingArticle.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editFormData)
+      });
+      if (res.ok) {
+        setIsEditModalOpen(false);
+        setEditingArticle(null);
+        fetchNews();
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this news article?")) return;
+    try {
+      const res = await fetch(`/api/news/${id}`, {
+        method: "DELETE"
+      });
+      if (res.ok) {
         fetchNews();
       }
     } catch (error) {
@@ -160,7 +214,7 @@ export default function NewsroomCMSPage() {
                   <tr key={article.id} className="hover:bg-slate-800/30 transition-colors">
                     <td className="px-6 py-4 max-w-md">
                       <h4 className="text-sm font-bold text-slate-200 mb-1 leading-snug">{article.title}</h4>
-                      <p className="text-xs text-slate-500 font-medium truncate">{article.content.substring(0, 80)}...</p>
+                      <p className="text-xs text-slate-500 font-medium truncate">{(article.content || "").substring(0, 80)}...</p>
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-md border inline-block bg-blue-500/10 text-blue-400 border-blue-500/20 whitespace-nowrap">
@@ -168,7 +222,7 @@ export default function NewsroomCMSPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-xs font-medium text-slate-400 whitespace-nowrap">
-                      {article.author?.name || 'Unknown'}
+                      {article.author?.name || 'Newsroom Editor'}
                     </td>
                     <td className="px-6 py-4 text-xs font-medium text-slate-400 whitespace-nowrap">
                       {article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : 'Unpublished'}
@@ -183,12 +237,17 @@ export default function NewsroomCMSPage() {
                     <td className="px-6 py-4 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <button 
-                          onClick={() => setIsEditModalOpen(true)}
+                          onClick={() => handleOpenEdit(article)}
                           className="text-slate-500 hover:text-blue-400 transition-colors p-1.5 hover:bg-blue-500/10 rounded-lg"
+                          title="Edit Article"
                         >
                           <PenTool className="w-4 h-4" />
                         </button>
-                        <button className="text-slate-500 hover:text-red-400 transition-colors p-1.5 hover:bg-red-500/10 rounded-lg">
+                        <button 
+                          onClick={() => handleDelete(article.id)}
+                          className="text-slate-500 hover:text-red-400 transition-colors p-1.5 hover:bg-red-500/10 rounded-lg"
+                          title="Delete Article"
+                        >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -244,6 +303,20 @@ export default function NewsroomCMSPage() {
                     <option value="Local Dutse">Local Dutse</option>
                     <option value="Jigawa News">Jigawa News</option>
                     <option value="Politics">Politics</option>
+                    <option value="Culture & Arts">Culture & Arts</option>
+                    <option value="Business">Business</option>
+                    <option value="Sports">Sports</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Publication Status</label>
+                  <select 
+                    value={formData.isPublished ? "published" : "draft"}
+                    onChange={(e) => setFormData({...formData, isPublished: e.target.value === "published"})}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all appearance-none"
+                  >
+                    <option value="published">Publish Immediately</option>
+                    <option value="draft">Save as Draft</option>
                   </select>
                 </div>
               </div>
@@ -285,7 +358,103 @@ export default function NewsroomCMSPage() {
         </div>
       )}
       
-      {/* Edit modal omitted for brevity as per implementation focus on create/read */}
+      {/* Edit News Article Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-[#020817]/80 backdrop-blur-md" onClick={() => setIsEditModalOpen(false)}></div>
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-3xl relative z-10 shadow-2xl flex flex-col max-h-[90vh]"
+          >
+            <div className="flex items-center justify-between p-6 border-b border-slate-800 shrink-0">
+              <h3 className="text-xl font-bold text-slate-100 flex items-center gap-2">
+                <PenTool className="w-5 h-5 text-blue-500" />
+                Edit News Article
+              </h3>
+              <button onClick={() => setIsEditModalOpen(false)} className="text-slate-500 hover:text-slate-300 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 md:p-8 space-y-6 overflow-y-auto">
+              
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Headline <span className="text-blue-500">*</span></label>
+                <input 
+                  type="text" 
+                  value={editFormData.title}
+                  onChange={(e) => setEditFormData({...editFormData, title: e.target.value})}
+                  placeholder="e.g. Jigawa Executive Council Approves..." 
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all placeholder:text-slate-700" 
+                />
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Category <span className="text-blue-500">*</span></label>
+                  <select 
+                    value={editFormData.category}
+                    onChange={(e) => setEditFormData({...editFormData, category: e.target.value})}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all appearance-none"
+                  >
+                    <option value="Local Dutse">Local Dutse</option>
+                    <option value="Jigawa News">Jigawa News</option>
+                    <option value="Politics">Politics</option>
+                    <option value="Culture & Arts">Culture & Arts</option>
+                    <option value="Business">Business</option>
+                    <option value="Sports">Sports</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Publication Status</label>
+                  <select 
+                    value={editFormData.isPublished ? "published" : "draft"}
+                    onChange={(e) => setEditFormData({...editFormData, isPublished: e.target.value === "published"})}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all appearance-none"
+                  >
+                    <option value="published">Published</option>
+                    <option value="draft">Draft</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Full Article Content <span className="text-blue-500">*</span></label>
+                <textarea 
+                  rows={6} 
+                  value={editFormData.content}
+                  onChange={(e) => setEditFormData({...editFormData, content: e.target.value})}
+                  placeholder="Write full news article content here..." 
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all resize-y leading-relaxed placeholder:text-slate-700"
+                ></textarea>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Featured Image URL</label>
+                <input 
+                  type="url" 
+                  value={editFormData.imageUrl}
+                  onChange={(e) => setEditFormData({...editFormData, imageUrl: e.target.value})}
+                  placeholder="https://..." 
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all font-mono text-xs" 
+                />
+              </div>
+
+            </div>
+            
+            <div className="p-6 border-t border-slate-800 flex items-center justify-end gap-4 bg-slate-950/50 rounded-b-2xl shrink-0">
+              <button onClick={() => setIsEditModalOpen(false)} className="text-sm font-bold text-slate-400 hover:text-slate-200 px-4 py-2 transition-colors">
+                Cancel
+              </button>
+              <button onClick={handleUpdate} className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm px-6 py-2.5 rounded-xl shadow-[0_0_15px_rgba(37,99,235,0.3)] transition-all">
+                Update Article
+              </button>
+            </div>
+
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
