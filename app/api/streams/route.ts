@@ -71,8 +71,11 @@ export async function PUT(req: Request) {
     });
 
     return NextResponse.json(stream);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error updating stream config:", error);
-    return NextResponse.json({ error: "Failed to update stream config" }, { status: 500 });
+    return NextResponse.json({ 
+      error: "Failed to update stream config", 
+      details: error?.message || String(error)
+    }, { status: 500 });
   }
 }
