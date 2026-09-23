@@ -182,44 +182,62 @@ export default function ProgramManagementPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/50">
-                {filteredPrograms.map((prog) => (
-                  <tr key={prog.id} className="hover:bg-slate-800/30 transition-colors">
-                    <td className="px-6 py-4">
-                      <h4 className="text-sm font-bold text-slate-200 mb-1">{prog.name}</h4>
-                      <p className="text-xs text-slate-500 font-medium truncate max-w-xs">{prog.desc}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-md border flex items-center w-fit gap-1.5 ${
-                        prog.medium === 'BOTH' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 
-                        prog.medium === 'RADIO' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
-                        'bg-purple-500/10 text-purple-400 border-purple-500/20'
-                      }`}>
-                        {prog.medium === 'BOTH' && <MonitorPlay className="w-3 h-3" />}
-                        {prog.medium === 'RADIO' && <Radio className="w-3 h-3" />}
-                        {prog.medium === 'TV' && <Tv className="w-3 h-3" />}
-                        {prog.medium}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-xs font-medium text-slate-400">
-                      {prog.category}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-xs font-bold text-slate-200">
-                        <CalendarClock className="w-3.5 h-3.5 text-slate-500" />
-                        {prog.time}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-xs font-bold text-slate-200 mb-0.5">{prog.presenter}</p>
-                      <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Prod: {prog.producer}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border inline-block ${
-                        prog.status === 'On Air' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.2)]' : 'bg-slate-800 text-slate-400 border-slate-700'
-                      }`}>
-                        {prog.status}
-                      </span>
-                    </td>
+                {filteredPrograms.map((prog) => {
+                  const title = prog.title || prog.name || "Untitled Program";
+                  const desc = prog.description || prog.desc || "Regular scheduled broadcast.";
+                  const medium = (prog.type || prog.medium || "RADIO").toUpperCase();
+                  const category = prog.category || (medium === "TV" ? "Television Special" : "Radio Broadcast");
+                  const presenterName = prog.host?.name || prog.presenter || "Station Presenter";
+                  const producerName = prog.producer || "360 Production Team";
+                  const statusLabel = prog.status || (prog.isLive ? "On Air" : "Scheduled");
+                  
+                  let timeLabel = prog.time;
+                  if (!timeLabel && prog.startTime) {
+                    const start = new Date(prog.startTime);
+                    const end = prog.endTime ? new Date(prog.endTime) : null;
+                    const fmt = (d: Date) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    timeLabel = end ? `${fmt(start)} - ${fmt(end)}` : fmt(start);
+                  }
+                  if (!timeLabel) timeLabel = "08:00 - 09:00";
+
+                  return (
+                    <tr key={prog.id} className="hover:bg-slate-800/30 transition-colors">
+                      <td className="px-6 py-4">
+                        <h4 className="text-sm font-bold text-slate-200 mb-1">{title}</h4>
+                        <p className="text-xs text-slate-500 font-medium truncate max-w-xs">{desc}</p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-md border flex items-center w-fit gap-1.5 ${
+                          medium === 'BOTH' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 
+                          medium === 'RADIO' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
+                          'bg-purple-500/10 text-purple-400 border-purple-500/20'
+                        }`}>
+                          {medium === 'BOTH' && <MonitorPlay className="w-3 h-3" />}
+                          {medium === 'RADIO' && <Radio className="w-3 h-3" />}
+                          {medium === 'TV' && <Tv className="w-3 h-3" />}
+                          {medium}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-xs font-medium text-slate-400">
+                        {category}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2 text-xs font-bold text-slate-200">
+                          <CalendarClock className="w-3.5 h-3.5 text-slate-500" />
+                          {timeLabel}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <p className="text-xs font-bold text-slate-200 mb-0.5">{presenterName}</p>
+                        <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Prod: {producerName}</p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border inline-block ${
+                          statusLabel === 'On Air' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.2)]' : 'bg-slate-800 text-slate-400 border-slate-700'
+                        }`}>
+                          {statusLabel}
+                        </span>
+                      </td>
                     <td className="px-6 py-4 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <button 
@@ -234,8 +252,9 @@ export default function ProgramManagementPage() {
                       </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
+                );
+              })}
+            </tbody>
             </table>
           </div>
         </motion.div>
