@@ -729,7 +729,7 @@ export default function MediaStoragePage() {
               initial={{ scale: 0.95, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 20 }}
-              className="bg-slate-900 border border-slate-700 rounded-3xl p-6 md:p-8 max-w-xl w-full shadow-2xl flex flex-col relative overflow-hidden"
+              className="bg-slate-900 border border-slate-700 rounded-3xl p-6 md:p-8 max-w-xl w-full shadow-2xl flex flex-col relative max-h-[90vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-800">
                 <h3 className="text-xl font-black text-white flex items-center gap-2">
