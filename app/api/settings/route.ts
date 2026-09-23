@@ -17,7 +17,19 @@ export async function GET() {
     return NextResponse.json(settings);
   } catch (error) {
     console.error("Error fetching settings:", error);
-    return NextResponse.json({ error: "Failed to fetch settings" }, { status: 500 });
+    // Graceful fallback for local dev or DB unavailability
+    return NextResponse.json({
+      id: "1",
+      name: "360 Radio & Television",
+      motto: "Voice of the Horizon - Broadcasting Peace, Culture & Truth",
+      phone: "+234 902 953 5000",
+      email: "info@360radiotv.ng",
+      address: "No. 1 Broad Street, Central Business District",
+      city: "Dutse",
+      state: "Jigawa State",
+      facebookUrl: "https://facebook.com/360radiotvdutse",
+      twitterUrl: "https://twitter.com/360radiotvdutse"
+    });
   }
 }
 

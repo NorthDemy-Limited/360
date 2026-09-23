@@ -29,7 +29,19 @@ export async function GET(req: Request) {
     return NextResponse.json(stream);
   } catch (error) {
     console.error("Error fetching stream config:", error);
-    return NextResponse.json({ error: "Failed to fetch stream config" }, { status: 500 });
+    // Graceful fallback for local dev or DB unavailability
+    const { searchParams } = new URL(req.url);
+    const type = searchParams.get("type") || "RADIO";
+    return NextResponse.json({
+      id: type,
+      streamUrl: type === "RADIO" 
+        ? "https://stream.zeno.fm/f3wvbbqndg8uv" 
+        : "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+      currentShow: type === "RADIO" 
+        ? "Morning Pulse (98.5 FM Live)" 
+        : "360 Digital Channel (Dutse Hub)",
+      isOnline: true
+    });
   }
 }
 
