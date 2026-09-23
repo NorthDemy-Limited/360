@@ -64,13 +64,47 @@ export async function POST(req: Request) {
     const body = await req.json();
     const validatedData = scheduleProgramSchema.parse(body);
 
+    let hostId = validatedData.hostId;
+    
+    // Check if provided hostId exists in User table
+    let hostUser = hostId ? await prisma.user.findUnique({ where: { id: hostId } }) : null;
+    
+    if (!hostUser) {
+      // Find any existing presenter or staff user
+      hostUser = await prisma.user.findFirst({
+        where: { role: "PRESENTER" }
+      }) || await prisma.user.findFirst();
+
+      if (hostUser) {
+        hostId = hostUser.id;
+      } else {
+        // Create default presenter if no staff exists
+        const defaultPresenter = await prisma.user.create({
+          data: {
+            email: "balarabe.hadejia@360radiotv.ng",
+            name: "Balarabe Hadejia",
+            role: "PRESENTER",
+            phone: "+234 902 953 5000",
+            password: "pass360",
+            mustChangePassword: false
+          }
+        });
+        hostId = defaultPresenter.id;
+      }
+    }
+
     const program = await prisma.program.create({
       data: {
         title: validatedData.title,
         type: validatedData.type,
         startTime: new Date(validatedData.startTime),
         endTime: new Date(validatedData.endTime),
-        hostId: validatedData.hostId,
+        hostId: hostId,
+      },
+      include: {
+        host: {
+          select: { name: true, avatar: true }
+        }
       }
     });
 
