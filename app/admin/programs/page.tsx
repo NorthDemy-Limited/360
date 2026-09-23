@@ -12,8 +12,20 @@ export default function ProgramManagementPage() {
   
   const [programs, setPrograms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingProgram, setEditingProgram] = useState<any>(null);
 
   const [formData, setFormData] = useState({
+    name: "",
+    desc: "",
+    medium: "RADIO",
+    category: "News & Current Affairs",
+    time: "08:00 - 09:00",
+    presenter: "",
+    producer: "",
+    status: "Scheduled"
+  });
+
+  const [editFormData, setEditFormData] = useState({
     name: "",
     desc: "",
     medium: "RADIO",
@@ -46,29 +58,41 @@ export default function ProgramManagementPage() {
     fetchPrograms();
   }, []);
 
+  const parseTimeRange = (timeStr: string) => {
+    const today = new Date();
+    const parts = (timeStr || "08:00 - 09:00").split(' - ');
+    const startStr = parts[0] || "08:00";
+    const endStr = parts[1] || "09:00";
+
+    const [startHours, startMinutes] = startStr.split(':');
+    const [endHours, endMinutes] = endStr.split(':');
+
+    const startDateTime = new Date(today);
+    startDateTime.setHours(parseInt(startHours) || 8, parseInt(startMinutes) || 0, 0, 0);
+
+    const endDateTime = new Date(today);
+    endDateTime.setHours(parseInt(endHours) || 9, parseInt(endMinutes) || 0, 0, 0);
+
+    return { startDateTime, endDateTime };
+  };
+
   const handleCreate = async () => {
     if (!formData.name) return;
     try {
-      // Build date objects for today with the given time
-      const today = new Date();
-      const [startHours, startMinutes] = formData.time.split(' - ')[0].split(':');
-      const [endHours, endMinutes] = formData.time.split(' - ')[1].split(':');
-      
-      const startDateTime = new Date(today);
-      startDateTime.setHours(parseInt(startHours), parseInt(startMinutes), 0, 0);
-      
-      const endDateTime = new Date(today);
-      endDateTime.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
+      const { startDateTime, endDateTime } = parseTimeRange(formData.time);
 
       const res = await fetch("/api/schedule", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: formData.name,
+          desc: formData.desc,
           type: formData.medium,
+          category: formData.category,
+          presenter: formData.presenter,
+          producer: formData.producer,
           startTime: startDateTime.toISOString(),
           endTime: endDateTime.toISOString(),
-          hostId: "cm0w3xxxb0000abc123456789" // Dummy host id for admin page if no user selected
         })
       });
       if (res.ok) {
@@ -77,6 +101,80 @@ export default function ProgramManagementPage() {
           name: "", desc: "", medium: "RADIO", category: "News & Current Affairs",
           time: "08:00 - 09:00", presenter: "", producer: "", status: "Scheduled"
         });
+        fetchPrograms();
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleOpenEdit = (prog: any) => {
+    setEditingProgram(prog);
+    const title = prog.title || prog.name || "";
+    const desc = prog.description || prog.desc || "";
+    const medium = (prog.type || prog.medium || "RADIO").toUpperCase();
+    const category = prog.category || "News & Current Affairs";
+    const presenter = prog.host?.name || prog.presenter || "";
+    const producer = prog.producer || "";
+
+    let time = prog.time;
+    if (!time && prog.startTime) {
+      const start = new Date(prog.startTime);
+      const end = prog.endTime ? new Date(prog.endTime) : null;
+      const fmt = (d: Date) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+      time = end ? `${fmt(start)} - ${fmt(end)}` : fmt(start);
+    }
+
+    setEditFormData({
+      name: title,
+      desc: desc,
+      medium: medium,
+      category: category,
+      time: time || "08:00 - 09:00",
+      presenter: presenter,
+      producer: producer,
+      status: prog.isLive ? "On Air" : "Scheduled"
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdate = async () => {
+    if (!editingProgram || !editFormData.name) return;
+    try {
+      const { startDateTime, endDateTime } = parseTimeRange(editFormData.time);
+
+      const res = await fetch(`/api/schedule/${editingProgram.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: editFormData.name,
+          desc: editFormData.desc,
+          type: editFormData.medium,
+          category: editFormData.category,
+          presenter: editFormData.presenter,
+          producer: editFormData.producer,
+          startTime: startDateTime.toISOString(),
+          endTime: endDateTime.toISOString(),
+        })
+      });
+
+      if (res.ok) {
+        setIsEditModalOpen(false);
+        setEditingProgram(null);
+        fetchPrograms();
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this program from the schedule?")) return;
+    try {
+      const res = await fetch(`/api/schedule/${id}`, {
+        method: "DELETE"
+      });
+      if (res.ok) {
         fetchPrograms();
       }
     } catch (error) {
@@ -241,12 +339,17 @@ export default function ProgramManagementPage() {
                     <td className="px-6 py-4 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <button 
-                          onClick={() => setIsEditModalOpen(true)}
+                          onClick={() => handleOpenEdit(prog)}
                           className="text-slate-500 hover:text-blue-400 transition-colors p-1.5 hover:bg-blue-500/10 rounded-lg"
+                          title="Edit Program"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
-                        <button className="text-slate-500 hover:text-red-400 transition-colors p-1.5 hover:bg-red-500/10 rounded-lg">
+                        <button 
+                          onClick={() => handleDelete(prog.id)}
+                          className="text-slate-500 hover:text-red-400 transition-colors p-1.5 hover:bg-red-500/10 rounded-lg"
+                          title="Delete Program"
+                        >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -377,7 +480,124 @@ export default function ProgramManagementPage() {
         </div>
       )}
 
-      {/* Edit Program Schedule Modal omitted for brevity */}
+      {/* Edit Program Schedule Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-[#020817]/80 backdrop-blur-md" onClick={() => setIsEditModalOpen(false)}></div>
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl relative z-10 shadow-2xl flex flex-col"
+          >
+            <div className="flex items-center justify-between p-6 border-b border-slate-800">
+              <h3 className="text-xl font-bold text-slate-100">Edit Program Schedule</h3>
+              <button onClick={() => setIsEditModalOpen(false)} className="text-slate-500 hover:text-slate-300 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 md:p-8 space-y-6">
+              
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Program Name <span className="text-blue-500">*</span></label>
+                <input 
+                  type="text" 
+                  value={editFormData.name}
+                  onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
+                  placeholder="e.g. Dutse Morning Pulse" 
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all placeholder:text-slate-700" 
+                />
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Medium <span className="text-blue-500">*</span></label>
+                  <select 
+                    value={editFormData.medium}
+                    onChange={(e) => setEditFormData({...editFormData, medium: e.target.value})}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all appearance-none"
+                  >
+                    <option value="RADIO">Radio</option>
+                    <option value="TV">TV</option>
+                    <option value="BOTH">Both</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Category <span className="text-blue-500">*</span></label>
+                  <select 
+                    value={editFormData.category}
+                    onChange={(e) => setEditFormData({...editFormData, category: e.target.value})}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all appearance-none"
+                  >
+                    <option>News & Current Affairs</option>
+                    <option>Culture & Heritage</option>
+                    <option>Entertainment & Music</option>
+                    <option>Education & Youth</option>
+                    <option>Religion & Ethics</option>
+                    <option>Business & Economy</option>
+                    <option>Sports</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Presenter (Host) <span className="text-blue-500">*</span></label>
+                  <input 
+                    type="text" 
+                    value={editFormData.presenter}
+                    onChange={(e) => setEditFormData({...editFormData, presenter: e.target.value})}
+                    placeholder="e.g. Balarabe Hadejia" 
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all placeholder:text-slate-700" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Producer</label>
+                  <input 
+                    type="text" 
+                    value={editFormData.producer}
+                    onChange={(e) => setEditFormData({...editFormData, producer: e.target.value})}
+                    placeholder="e.g. Fatima Garba" 
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all placeholder:text-slate-700" 
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-6">
+                <div className="col-span-3 space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Time Slot <span className="text-blue-500">*</span></label>
+                  <input 
+                    type="text" 
+                    value={editFormData.time}
+                    onChange={(e) => setEditFormData({...editFormData, time: e.target.value})}
+                    placeholder="08:00 - 09:00" 
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all" 
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Description</label>
+                <textarea 
+                  rows={3} 
+                  value={editFormData.desc}
+                  onChange={(e) => setEditFormData({...editFormData, desc: e.target.value})}
+                  placeholder="Short outline of the broadcast program..." 
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all resize-none placeholder:text-slate-700"
+                ></textarea>
+              </div>
+
+            </div>
+            <div className="p-6 border-t border-slate-800 flex items-center justify-end gap-4 bg-slate-950/50 rounded-b-2xl">
+              <button onClick={() => setIsEditModalOpen(false)} className="text-sm font-bold text-slate-400 hover:text-slate-200 px-4 py-2 transition-colors">
+                Cancel
+              </button>
+              <button onClick={handleUpdate} className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm px-6 py-2.5 rounded-xl shadow-[0_0_15px_rgba(37,99,235,0.3)] transition-all">
+                Update Program
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
     </div>
   );

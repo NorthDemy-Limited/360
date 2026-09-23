@@ -64,38 +64,58 @@ export async function POST(req: Request) {
     const body = await req.json();
     const validatedData = scheduleProgramSchema.parse(body);
 
+    const presenterName = (body.presenter || body.presenterName || "").trim();
     let hostId = validatedData.hostId;
-    
-    // Check if provided hostId exists in User table
-    let hostUser = hostId ? await prisma.user.findUnique({ where: { id: hostId } }) : null;
-    
-    if (!hostUser) {
-      // Find any existing presenter or staff user
-      hostUser = await prisma.user.findFirst({
-        where: { role: "PRESENTER" }
-      }) || await prisma.user.findFirst();
 
-      if (hostUser) {
-        hostId = hostUser.id;
-      } else {
-        // Create default presenter if no staff exists
-        const defaultPresenter = await prisma.user.create({
+    if (presenterName) {
+      let matchingUser = await prisma.user.findFirst({
+        where: { name: { equals: presenterName, mode: 'insensitive' } }
+      });
+
+      if (!matchingUser) {
+        const cleanName = presenterName.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const email = `${cleanName || 'presenter'}_${Date.now()}@360radiotv.ng`;
+        matchingUser = await prisma.user.create({
           data: {
-            email: "balarabe.hadejia@360radiotv.ng",
-            name: "Balarabe Hadejia",
+            name: presenterName,
+            email: email,
             role: "PRESENTER",
             phone: "+234 902 953 5000",
             password: "pass360",
             mustChangePassword: false
           }
         });
-        hostId = defaultPresenter.id;
+      }
+      hostId = matchingUser.id;
+    } else {
+      let hostUser = hostId ? await prisma.user.findUnique({ where: { id: hostId } }) : null;
+      if (!hostUser) {
+        hostUser = await prisma.user.findFirst({
+          where: { role: "PRESENTER" }
+        }) || await prisma.user.findFirst();
+
+        if (hostUser) {
+          hostId = hostUser.id;
+        } else {
+          const defaultPresenter = await prisma.user.create({
+            data: {
+              email: "balarabe.hadejia@360radiotv.ng",
+              name: "Balarabe Hadejia",
+              role: "PRESENTER",
+              phone: "+234 902 953 5000",
+              password: "pass360",
+              mustChangePassword: false
+            }
+          });
+          hostId = defaultPresenter.id;
+        }
       }
     }
 
     const program = await prisma.program.create({
       data: {
         title: validatedData.title,
+        description: body.desc || body.description || null,
         type: validatedData.type,
         startTime: new Date(validatedData.startTime),
         endTime: new Date(validatedData.endTime),
