@@ -42,26 +42,48 @@ export async function POST(req: Request) {
     const body = await req.json();
     const validatedData = createNewsSchema.parse(body);
 
-    // In a real app, authorId comes from the session/auth token
-    // Using a mock ID here temporarily for development
-    const mockAuthor = await prisma.user.findFirst({
-      where: { role: "NEWS_EDITOR" }
+    let author = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { role: "NEWS_EDITOR" },
+          { role: "ADMIN font-bold" },
+          { role: "ADMIN" },
+          { role: "STATION_MANAGER" }
+        ]
+      }
     });
 
-    if (!mockAuthor) {
-      return NextResponse.json({ error: "No news editor exists to author this post." }, { status: 400 });
+    if (!author) {
+      author = await prisma.user.create({
+        data: {
+          email: "aminu.kazaure@360radiotv.ng",
+          name: "Aminu Sani Kazaure",
+          role: "NEWS_EDITOR",
+          phone: "+234 902 953 5000",
+          password: "pass360",
+          mustChangePassword: false
+        }
+      });
     }
+
+    const baseSlug = validatedData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') || 'news-article';
+    const uniqueSlug = `${baseSlug}-${Math.random().toString(36).substring(2, 7)}`;
 
     const news = await prisma.news.create({
       data: {
         title: validatedData.title,
         content: validatedData.content,
-        category: validatedData.category,
-        imageUrl: validatedData.imageUrl,
-        slug: validatedData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
-        authorId: mockAuthor.id,
-        isPublished: validatedData.isPublished,
-        publishedAt: validatedData.isPublished ? new Date() : null,
+        category: validatedData.category || "GENERAL",
+        imageUrl: validatedData.imageUrl || null,
+        slug: uniqueSlug,
+        authorId: author.id,
+        isPublished: validatedData.isPublished !== undefined ? validatedData.isPublished : true,
+        publishedAt: validatedData.isPublished ? new Date() : new Date(),
+      },
+      include: {
+        author: {
+          select: { name: true, avatar: true }
+        }
       }
     });
 

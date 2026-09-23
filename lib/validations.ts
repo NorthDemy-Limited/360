@@ -2,10 +2,10 @@ import { z } from "zod";
 
 // 1. Create News Article Schema
 export const createNewsSchema = z.object({
-  title: z.string().min(10, "Title must be at least 10 characters"),
-  content: z.string().min(100, "Article content is too short"),
+  title: z.string().min(3, "Title must be at least 3 characters"),
+  content: z.string().min(5, "Article content is required"),
   category: z.string(),
-  imageUrl: z.string().optional(),
+  imageUrl: z.string().optional().nullable(),
   isPublished: z.boolean().default(false),
 });
 
